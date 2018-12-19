@@ -8,9 +8,10 @@ use amethyst::renderer::{
     Stage, Texture,
 };
 use amethyst::{Application, GameData, GameDataBuilder, SimpleState, StateData};
-use nphysics_ecs_dumb::bodies::DynamicBody;
+use nphysics_ecs_dumb::*;
 use nphysics_ecs_dumb::nphysics::math::{Point, Velocity};
-use nphysics_ecs_dumb::systems::PhysicsBundle;
+use nphysics_ecs_dumb::nphysics::object::Material as PhysicsMaterial;
+use nphysics_ecs_dumb::ncollide::shape::{ShapeHandle, Ball, Cuboid};
 use num_traits::identities::One;
 
 struct GameState;
@@ -74,9 +75,9 @@ impl SimpleState for GameState {
         // Add Sphere (todo: add many, add rigidbodies and colliders)
         data.world
             .create_entity()
-            .with(sphere_handle)
-            .with(material)
-            .with(Transform::from(Vector3::new(0.0, 0.0, -10.0)))
+            .with(sphere_handle.clone())
+            .with(material.clone())
+            .with(Transform::from(Vector3::new(0.0, 5.0, -10.0)))
             .with(GlobalTransform::default())
             .with(DynamicBody::new_rigidbody_with_velocity(
                 Velocity::linear(0.0, 10.0, 0.0),
@@ -84,6 +85,29 @@ impl SimpleState for GameState {
                 Matrix3::one(),
                 Point::new(0.0, 0.0, 0.0),
             ))
+            .with(
+                ColliderBuilder::from(ShapeHandle::new(Ball::new(1.0)))
+                .collision_group(0)
+                .physics_material(PhysicsMaterial::default())
+                .build()
+                .unwrap()
+            )
+            .build();
+
+        // Add ground
+        data.world
+            .create_entity()
+            .with(sphere_handle)
+            .with(material)
+            .with(Transform::from(Vector3::new(0.0, 0.0, -10.0)))
+            .with(GlobalTransform::default())
+            .with(
+                ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0, 5.0))))
+                .collision_group(0)
+                .physics_material(PhysicsMaterial::default())
+                .build()
+                .unwrap()
+            )
             .build();
     }
 }
