@@ -72,7 +72,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 ) => {
                     trace!("Synchronizing RigidBody from handle: {:?}", updated_rigid_body.handle());
 
-                    trace!("Synchronized RigidBody's updated position: {}", updated_rigid_body.position());
+                    trace!("Synchronized RigidBody's updated position: {:?}", updated_rigid_body.position());
                     // TODO: Might get rid of the scale!!!
                     global_transform.0 = updated_rigid_body
                         .position()
@@ -95,7 +95,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     rigid_body.mass = inertia.linear;
                     rigid_body.angular_mass = inertia.angular;
 
-                    trace!("Synchronized RigidBody's updated center of mass: {}", updated_rigid_body.center_of_mass());
+                    trace!("Synchronized RigidBody's updated center of mass: {:?}", updated_rigid_body.center_of_mass());
                     rigid_body.center_of_mass = updated_rigid_body.center_of_mass();
                 }
                 (DynamicBody::Multibody(_multibody), Body::Multibody(_updated_multibody)) => {
@@ -111,7 +111,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
         let collision_world = physical_world.collision_world();
 
         contact_events.iter_write(collision_world.contact_events().iter().cloned().map(|ev| {
-            trace!("Emitting contact event: {}", ev);
+            trace!("Emitting contact event: {:?}", ev);
 
             let (handle1, handle2) = match ev {
                 ContactEvent::Started(h1, h2) => (h1, h2),
@@ -131,7 +131,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 .iter()
                 .cloned()
                 .map(|ev| {
-                    trace!("Emitting proximity event: {}", ev);
+                    trace!("Emitting proximity event: {:?}", ev);
 
                     let e1 = entity_from_handle(&entities, &colliders, &ev.collider1)
                         .expect("Failed to find entity for collider.");

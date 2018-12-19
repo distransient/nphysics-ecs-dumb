@@ -61,7 +61,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 }
 
                 let parent = if let Some(rb) = rigid_bodies.get(entity) {
-                    trace!("Attaching inserted collider to rigid body: {}", entity);
+                    trace!("Attaching inserted collider to rigid body: {:?}", entity);
 
                     rb.handle().expect(
                         "You should normally have a body handle at this point. This is a bug.",
@@ -80,7 +80,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     collider.physics_material.clone(),
                 ));
 
-                trace!("Inserted collider to world with values: {}", collider);
+                trace!("Inserted collider to world with values: {:?}", collider);
 
                 let prediction = physical_world.prediction();
                 let angular_prediction = physical_world.angular_prediction();
@@ -91,15 +91,16 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .collision_object_mut(collider.handle.unwrap())
                     .unwrap();
 
-                let collider_handle = collider_object.handle().clone();
-
-                collision_world.set_collision_group(collider_handle, collider.collision_group);
-
                 collider_object.set_query_type(collider.query_type.to_geometric_query_type(
                     collider.margin,
                     prediction,
                     angular_prediction,
                 ));
+
+                let collider_handle = collider_object.handle().clone();
+
+                collision_world.set_collision_group(collider_handle, collider.collision_group);
+                
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
                 println!("Detected changed collider with id {:?}", id);
 

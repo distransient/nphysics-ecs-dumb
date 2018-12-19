@@ -31,7 +31,7 @@ impl ColliderType {
     }
 }
 
-#[derive(new, Clone, Builder)]
+#[derive(new, Clone, Builder, Debug)]
 #[builder(pattern = "owned")]
 pub struct Collider {
     #[new(default)]
