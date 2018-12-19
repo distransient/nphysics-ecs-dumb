@@ -48,7 +48,6 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
         )
             .join()
         {
-            trace!("Pre-insert collider {}", id);
             if inserted_colliders.contains(id) {
                 trace!("Detected inserted collider with id {}", id);
 
