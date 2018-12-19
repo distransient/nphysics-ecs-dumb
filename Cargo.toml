@@ -15,6 +15,10 @@ num-traits = "0.2"
 derive-new = "0.5.6"
 derive_builder = "0.7.0"
 serde = { version = "1.0", features = ["derive"] }
+<<<<<<< HEAD
+=======
+log = "*"
+>>>>>>> ddde4b8fdb9ad5dd5e308d237360dcb019fa22a0
 
 [dependencies.amethyst]
 git = "https://github.com/amethyst/amethyst"

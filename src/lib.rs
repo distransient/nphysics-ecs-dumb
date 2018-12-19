@@ -9,6 +9,8 @@ extern crate derive_builder;
 extern crate derive_new;
 #[macro_use]
 extern crate serde;
+#[macro_use]
+extern crate log;
 
 pub mod bodies;
 pub mod colliders;
