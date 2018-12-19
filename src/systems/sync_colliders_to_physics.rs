@@ -32,7 +32,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
         let mut modified_colliders = BitSet::new();
 
         iterate_events(
-            &transforms,
+            &colliders,
             self.colliders_reader_id.as_mut().unwrap(),
             &mut inserted_colliders,
             &mut modified_colliders,
@@ -48,6 +48,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
         )
             .join()
         {
+            trace!("Pre-insert collider {}", id);
             if inserted_colliders.contains(id) {
                 trace!("Detected inserted collider with id {}", id);
 
@@ -100,7 +101,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 let collider_handle = collider_object.handle().clone();
 
                 collision_world.set_collision_group(collider_handle, collider.collision_group);
-                
+
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
                 println!("Detected changed collider with id {:?}", id);
 
