@@ -31,7 +31,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
         Write<'a, EventChannel<EntityProximityEvent>>,
         WriteStorage<'a, GlobalTransform>,
         WriteStorage<'a, DynamicBody>,
-        ReadStorage<'a, Transform>,
+        WriteStorage<'a, Transform>,
         ReadStorage<'a, Collider>,
     );
 
@@ -43,16 +43,16 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
             mut proximity_events,
             mut global_transforms,
             mut physics_bodies,
-            local_transforms,
+            mut local_transforms,
             colliders,
         ) = data;
 
         // Apply the updated values of the simulated world to our Components
         #[allow(unused_mut)]
-        for (mut global_transform, mut body, local_transform) in (
+        for (mut global_transform, mut body, mut local_transform) in (
             &mut global_transforms,
             &mut physics_bodies,
-            local_transforms.maybe(),
+            (&mut local_transforms).maybe(),
         )
             .join()
         {
@@ -77,10 +77,14 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                         .position()
                         .to_homogeneous()
                         .prepend_nonuniform_scaling(
-                            local_transform
-                                .map(|tr| tr.scale())
-                                .unwrap_or(&Vector3::new(1.0, 1.0, 1.0)),
+                            &local_transform.as_ref()
+                                .map(|tr| tr.scale().clone())
+                                .unwrap_or(Vector3::new(1.0, 1.0, 1.0)),
                         );
+
+                    if let Some(ref mut local_transform) = local_transform {
+                        *local_transform.isometry_mut() = updated_rigid_body.position().clone();
+                    }
 
                     rigid_body.velocity = *updated_rigid_body.velocity();
                     let inertia = updated_rigid_body.inertia();
