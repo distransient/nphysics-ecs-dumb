@@ -132,6 +132,10 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .set_material(collider.physics_material.clone());
             }
         }
+        colliders
+             .channel()
+             .read(&mut self.colliders_reader_id.as_mut().unwrap())
+             .for_each(|_| ());
     }
 
     fn setup(&mut self, res: &mut Resources) {
