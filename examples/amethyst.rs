@@ -53,11 +53,11 @@ impl SimpleState for GameState {
             .build();
 
         // Add Light
-        data.world.add_resource(AmbientColor(Rgba::from([0.5; 3])));
+        data.world.add_resource(AmbientColor(Rgba::from([0.2; 3])));
         data.world
             .create_entity()
             .with(Light::Point(PointLight {
-                intensity: 3.0,
+                intensity: 50.0,
                 color: Rgba::white(),
                 radius: 5.0,
                 smoothness: 4.0,
@@ -77,10 +77,10 @@ impl SimpleState for GameState {
             .create_entity()
             .with(sphere_handle.clone())
             .with(material.clone())
-            .with(Transform::from(Vector3::new(0.0, 5.0, -10.0)))
+            .with(Transform::from(Vector3::new(0.0, 3.0, -10.0)))
             .with(GlobalTransform::default())
             .with(DynamicBody::new_rigidbody_with_velocity(
-                Velocity::linear(0.0, 10.0, 0.0),
+                Velocity::linear(0.0, 1.0, 0.0),
                 10.0,
                 Matrix3::one(),
                 Point::new(0.0, 0.0, 0.0),
@@ -102,7 +102,8 @@ impl SimpleState for GameState {
             .with(Transform::from(Vector3::new(0.0, 0.0, -10.0)))
             .with(GlobalTransform::default())
             .with(
-                ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0, 5.0))))
+                //ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0, 5.0))))
+                ColliderBuilder::from(ShapeHandle::new(Ball::new(1.0)))
                 .collision_group(0)
                 .physics_material(PhysicsMaterial::default())
                 .build()

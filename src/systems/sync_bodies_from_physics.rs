@@ -73,7 +73,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     trace!("Synchronizing RigidBody from handle: {:?}", updated_rigid_body.handle());
 
                     trace!("Synchronized RigidBody's updated position: {:?}", updated_rigid_body.position());
-                    // TODO: Might get rid of the scale!!!
+                    
                     global_transform.0 = updated_rigid_body
                         .position()
                         .to_homogeneous()
