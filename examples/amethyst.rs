@@ -11,7 +11,10 @@ use amethyst::{Application, GameData, GameDataBuilder, SimpleState, StateData};
 use nphysics_ecs_dumb::*;
 use nphysics_ecs_dumb::nphysics::math::{Point, Velocity};
 use nphysics_ecs_dumb::nphysics::object::Material as PhysicsMaterial;
+use nphysics_ecs_dumb::nphysics::object::BodyHandle;
 use nphysics_ecs_dumb::ncollide::shape::{ShapeHandle, Ball, Cuboid};
+use nphysics_ecs_dumb::nphysics::volumetric::Volumetric;
+use nalgebra::Isometry3;
 use num_traits::identities::One;
 
 struct GameState;
@@ -110,6 +113,41 @@ impl SimpleState for GameState {
                 .unwrap()
             )
             .build();
+
+
+
+        //---------------------------------------------------- nphysics's ball3.rs adapted
+
+        /*let mut physics_world = data.world.write_resource::<PhysicsWorld>();
+        physics_world.set_gravity(Vector3::new(0.0, -9.81, 0.0));
+
+        // Material for all objects.
+        let material = PhysicsMaterial::default();
+        let ground_shape =
+            ShapeHandle::new(Cuboid::new(Vector3::repeat(1.0 - 0.01)));
+        let ground_pos = Isometry3::new(Vector3::new(0.0, -0.5, -15.0), nalgebra::zero());
+
+        physics_world.add_collider(
+            0.01,
+            ground_shape,
+            BodyHandle::ground(),
+            ground_pos,
+            material.clone(),
+        );
+        let geom = ShapeHandle::new(Ball::new(1.0 - 0.01));
+        let inertia = geom.inertia(1.0);
+        let center_of_mass = geom.center_of_mass();
+
+
+        let pos = Isometry3::new(Vector3::new(0.0, 5.0, -15.0), nalgebra::zero());
+        let handle = physics_world.add_rigid_body(pos, inertia, center_of_mass);
+        physics_world.add_collider(
+            0.01,
+            geom.clone(),
+            handle,
+            Isometry3::identity(),
+            material.clone(),
+        );*/
     }
 }
 
