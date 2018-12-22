@@ -73,41 +73,49 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
 
                     BodyHandle::ground()
                 };
-                let position: Isometry3<f32> = if parent.is_ground() {
-                    let p: Isometry3<f32> = try_convert(global_transform.0).unwrap();
-                    p * collider.offset_from_parent
+                let position = if parent.is_ground() {
+                    let p: Option<Isometry3<f32>> = try_convert(global_transform.0);
+                    if let Some(pos) = p {
+                        Some(pos * collider.offset_from_parent)
+                    } else {
+                        None
+                    }
                 } else {
-                    collider.offset_from_parent
+                    Some(collider.offset_from_parent)
                 };
 
-                collider.handle = Some(physical_world.add_collider(
-                    collider.margin,
-                    collider.shape.clone(),
-                    parent,
-                    position,
-                    collider.physics_material.clone(),
-                ));
+                if let Some(position) = position {
+                    collider.handle = Some(physical_world.add_collider(
+                        collider.margin,
+                        collider.shape.clone(),
+                        parent,
+                        position,
+                        collider.physics_material.clone(),
+                    ));
 
-                trace!("Inserted collider to world with values: {:?}", collider);
+                    trace!("Inserted collider to world with values: {:?}", collider);
 
-                let prediction = physical_world.prediction();
-                let angular_prediction = physical_world.angular_prediction();
+                    let prediction = physical_world.prediction();
+                    let angular_prediction = physical_world.angular_prediction();
 
-                let collision_world = physical_world.collision_world_mut();
+                    let collision_world = physical_world.collision_world_mut();
 
-                let collider_object = collision_world
-                    .collision_object_mut(collider.handle.unwrap())
-                    .unwrap();
+                    let collider_object = collision_world
+                        .collision_object_mut(collider.handle.unwrap())
+                        .unwrap();
 
-                collider_object.set_query_type(collider.query_type.to_geometric_query_type(
-                    collider.margin,
-                    prediction,
-                    angular_prediction,
-                ));
+                    collider_object.set_query_type(collider.query_type.to_geometric_query_type(
+                        collider.margin,
+                        prediction,
+                        angular_prediction,
+                    ));
 
-                let collider_handle = collider_object.handle().clone();
+                    let collider_handle = collider_object.handle().clone();
 
-                collision_world.set_collision_group(collider_handle, collider.collision_group);
+                    collision_world.set_collision_group(collider_handle, collider.collision_group);
+                } else {
+                    warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
+                }
 
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
                 println!("Detected changed collider with id {:?}", id);
@@ -128,16 +136,44 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 let collider_object = collision_world
                     .collision_object_mut(collider.handle.unwrap())
                     .unwrap();
+
+                let parent = if let Some(rb) = rigid_bodies.get(entity) {
+                    trace!("Updating collider to rigid body: {:?}", entity);
+
+                    rb.handle().expect(
+                        "You should normally have a body handle at this point. This is a bug.",
+                    )
+                } else {
+                    trace!("Updating collider to ground.");
+
+                    BodyHandle::ground()
+                };
                 //collider_handle.set_shape(collider_handle.shape);
-                collider_object.set_position(collider.offset_from_parent.clone());
-                collider_object.set_query_type(collider.query_type.to_geometric_query_type(
-                    collider.margin,
-                    prediction,
-                    angular_prediction,
-                ));
-                collider_object
-                    .data_mut()
-                    .set_material(collider.physics_material.clone());
+                let position = if parent.is_ground() {
+                    let p: Option<Isometry3<f32>> = try_convert(global_transform.0);
+                    if let Some(pos) = p {
+                        Some(pos * collider.offset_from_parent)
+                    } else {
+                        None
+                    }
+                } else {
+                    Some(collider.offset_from_parent)
+                };
+
+                if let Some(position) = position {
+
+                    collider_object.set_position(position);
+                    collider_object.set_query_type(collider.query_type.to_geometric_query_type(
+                        collider.margin,
+                        prediction,
+                        angular_prediction,
+                    ));
+                    collider_object
+                        .data_mut()
+                        .set_material(collider.physics_material.clone());
+                } else {
+                    warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
+                }
             }
         }
         colliders
