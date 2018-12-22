@@ -75,6 +75,8 @@ impl SimpleState for GameState {
             &data.world.read_resource(),
         );
 
+        let ball = ShapeHandle::new(Ball::new(1.0));
+
         // Add Sphere (todo: add many, add rigidbodies and colliders)
         data.world
             .create_entity()
@@ -86,10 +88,10 @@ impl SimpleState for GameState {
                 Velocity::linear(0.0, 1.0, 0.0),
                 10.0,
                 Matrix3::one(),
-                Point::new(0.0, 0.0, 0.0),
+                ball.center_of_mass(),
             ))
             .with(
-                ColliderBuilder::from(ShapeHandle::new(Ball::new(1.0)))
+                ColliderBuilder::from(ball.clone())
                 .collision_group(0)
                 .physics_material(PhysicsMaterial::default())
                 .build()
@@ -106,7 +108,7 @@ impl SimpleState for GameState {
             .with(GlobalTransform::default())
             .with(
                 //ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0, 5.0))))
-                ColliderBuilder::from(ShapeHandle::new(Ball::new(1.0)))
+                ColliderBuilder::from(ball)
                 .collision_group(0)
                 .physics_material(PhysicsMaterial::default())
                 .build()

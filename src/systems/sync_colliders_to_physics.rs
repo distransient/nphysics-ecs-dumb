@@ -1,3 +1,4 @@
+use nalgebra::{try_convert, Isometry3};
 use crate::bodies::DynamicBody;
 use crate::Collider;
 use crate::PhysicsWorld;
@@ -41,10 +42,11 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
             &colliders,
         );
 
-        for (entity, mut collider, id) in (
+        for (entity, mut collider, id, global_transform) in (
             &entities,
             &mut colliders,
             &inserted_colliders | &modified_colliders,
+            &transforms,
         )
             .join()
         {
@@ -71,12 +73,18 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
 
                     BodyHandle::ground()
                 };
+                let position: Isometry3<f32> = if parent.is_ground() {
+                    let p: Isometry3<f32> = try_convert(global_transform.0).unwrap();
+                    p * collider.offset_from_parent
+                } else {
+                    collider.offset_from_parent
+                };
 
                 collider.handle = Some(physical_world.add_collider(
                     collider.margin,
                     collider.shape.clone(),
                     parent,
-                    collider.offset_from_parent,
+                    position,
                     collider.physics_material.clone(),
                 ));
 
