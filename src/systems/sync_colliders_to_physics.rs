@@ -42,6 +42,8 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
             &colliders,
         );
 
+        let mut reinsert = vec![];
+
         for (entity, mut collider, id, global_transform) in (
             &entities,
             &mut colliders,
@@ -115,6 +117,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     collision_world.set_collision_group(collider_handle, collider.collision_group);
                 } else {
                     warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
+                    reinsert.push(id);
                 }
 
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
@@ -173,13 +176,19 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                         .set_material(collider.physics_material.clone());
                 } else {
                     warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
+                    reinsert.push(id);
                 }
             }
         }
+
         colliders
              .channel()
              .read(&mut self.colliders_reader_id.as_mut().unwrap())
              .for_each(|_| ());
+
+        for id in reinsert {
+            colliders.channel_mut().single_write(ComponentEvent::Inserted(id));
+        }
     }
 
     fn setup(&mut self, res: &mut Resources) {
