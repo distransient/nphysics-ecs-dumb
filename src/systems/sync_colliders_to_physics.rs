@@ -2,7 +2,7 @@ use nalgebra::{try_convert, Isometry3};
 use crate::bodies::DynamicBody;
 use crate::Collider;
 use crate::PhysicsWorld;
-use amethyst::core::GlobalTransform;
+use amethyst::core::Transform;
 use amethyst::ecs::storage::{ComponentEvent, GenericReadStorage, MaskedStorage};
 use amethyst::ecs::{
     BitSet, Component, Entities, Join, ReadStorage, ReaderId, Resources, Storage, System,
@@ -21,7 +21,8 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
     type SystemData = (
         WriteExpect<'a, PhysicsWorld>,
         Entities<'a>,
-        ReadStorage<'a, GlobalTransform>,
+        //ReadStorage<'a, GlobalTransform>,
+        ReadStorage<'a, Transform>,
         ReadStorage<'a, DynamicBody>,
         WriteStorage<'a, Collider>,
     );
@@ -44,7 +45,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
 
         let mut reinsert = vec![];
 
-        for (entity, mut collider, id, global_transform) in (
+        for (entity, mut collider, id, tr) in (
             &entities,
             &mut colliders,
             &inserted_colliders | &modified_colliders,
@@ -76,17 +77,19 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     BodyHandle::ground()
                 };
                 let position = if parent.is_ground() {
-                    let p: Option<Isometry3<f32>> = try_convert(global_transform.0);
-                    if let Some(pos) = p {
+                    //let p: Option<Isometry3<f32>> = try_convert(tr.isometry());
+                    tr.isometry() * collider.offset_from_parent
+                    /*if let Some(pos) = p {
                         Some(pos * collider.offset_from_parent)
                     } else {
                         None
-                    }
+                    }*/
                 } else {
-                    Some(collider.offset_from_parent)
+                    //Some(collider.offset_from_parent)
+                    collider.offset_from_parent
                 };
 
-                if let Some(position) = position {
+                //if let Some(position) = position {
                     collider.handle = Some(physical_world.add_collider(
                         collider.margin,
                         collider.shape.clone(),
@@ -115,10 +118,10 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     let collider_handle = collider_object.handle().clone();
 
                     collision_world.set_collision_group(collider_handle, collider.collision_group);
-                } else {
+                /*} else {
                     warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
                     reinsert.push(id);
-                }
+                }*/
 
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
                 println!("Detected changed collider with id {:?}", id);
@@ -151,33 +154,24 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
 
                     BodyHandle::ground()
                 };
+
                 //collider_handle.set_shape(collider_handle.shape);
+
                 let position = if parent.is_ground() {
-                    let p: Option<Isometry3<f32>> = try_convert(global_transform.0);
-                    if let Some(pos) = p {
-                        Some(pos * collider.offset_from_parent)
-                    } else {
-                        None
-                    }
+                    tr.isometry() * collider.offset_from_parent
                 } else {
-                    Some(collider.offset_from_parent)
+                    collider.offset_from_parent
                 };
 
-                if let Some(position) = position {
-
-                    collider_object.set_position(position);
-                    collider_object.set_query_type(collider.query_type.to_geometric_query_type(
-                        collider.margin,
-                        prediction,
-                        angular_prediction,
-                    ));
-                    collider_object
-                        .data_mut()
-                        .set_material(collider.physics_material.clone());
-                } else {
-                    warn!("GlobalTransform not initialized on entity yet. Skipping one frame.");
-                    reinsert.push(id);
-                }
+                collider_object.set_position(position);
+                collider_object.set_query_type(collider.query_type.to_geometric_query_type(
+                    collider.margin,
+                    prediction,
+                    angular_prediction,
+                ));
+                collider_object
+                    .data_mut()
+                    .set_material(collider.physics_material.clone());
             }
         }
 
