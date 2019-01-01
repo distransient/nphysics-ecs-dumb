@@ -104,6 +104,8 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                         physical_body.apply_force(&rigid_body.external_forces);
                         rigid_body.external_forces = Force::<f32>::zero();
 
+                        physical_body.set_status(rigid_body.body_status);
+
                         trace!("Velocity and external forces applied, external forces reset to zero, for body with handle: {:?}", rigid_body.handle);
                     }
                     DynamicBody::Multibody(_) => {
@@ -122,6 +124,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                                 physical_body.set_position(position);
                                 physical_body.set_velocity(rigid_body.velocity);
                                 physical_body.apply_force(&rigid_body.external_forces);
+                                physical_body.set_status(rigid_body.body_status);
 
                                 // if you changed the mass properties at all... too bad!
                             },

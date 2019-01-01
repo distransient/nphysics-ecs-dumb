@@ -2,7 +2,7 @@ use amethyst::ecs::world::Index;
 use amethyst::ecs::{Component, FlaggedStorage};
 use nalgebra::Matrix3;
 use nphysics3d::math::{Force, Point, Velocity};
-use nphysics3d::object::BodyHandle;
+use nphysics3d::object::{BodyHandle, BodyStatus};
 use std::collections::HashMap;
 
 /// Physics body component for describing (currently) rigid body dynamics.
@@ -34,6 +34,7 @@ impl DynamicBody {
     ) -> Self {
         DynamicBody::RigidBody(RigidPhysicsBody {
             handle: None,
+            body_status: BodyStatus::Dynamic,
             velocity,
             mass,
             angular_mass,
@@ -62,6 +63,9 @@ pub struct RigidPhysicsBody {
     #[serde(skip)]
     #[new(default)]
     pub(crate) handle: Option<BodyHandle>,
+    
+    #[serde(skip)]
+    pub body_status: BodyStatus,
     pub velocity: Velocity<f32>,
 
     // TODO: update these in the physics system below.
