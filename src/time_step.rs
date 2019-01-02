@@ -5,9 +5,9 @@ use std::{
 
 /// The type of time step to use for the physics simulation.
 pub enum TimeStep {
-    /// Physics will always use the given timestep.TimeStepChangeError.
+    /// Physics will always use the given timestep.
     Fixed(f32),
-    /// Physics use one of the given timesteps, chaning when physics are falling behind.
+    /// Physics use one of the given timesteps, changing when physics are falling behind.
     SemiFixed(TimeStepConstraint),
 }
 
@@ -78,7 +78,7 @@ impl TimeStepConstraint {
         }
     }
 
-    /// Increase the timestep. This corresponds to fewer updates per seconds.
+    /// Increase the timestep. This corresponds to fewer updates per second.
     pub fn increase_timestep(&mut self) -> Result<f32, TimeStepChangeError> {
         if self.current_index >= self.time_steps.len() - 1 {
             return Err(TimeStepChangeError::MaximumTimestepReached);
