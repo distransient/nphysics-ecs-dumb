@@ -55,11 +55,12 @@ impl<'a> System<'a> for PhysicsStepperSystem {
 
         if steps > self.max_timesteps {
             if let TimeStep::SemiFixed(constraint) = &mut self.intended_timestep {
-                if let Err(error) = constraint.increase_timestep() {
-                    warn!("Failed to raised physics timestep! Error: {}", error);
-                } else {
-                    physical_world.set_timestep(constraint.current_timestep());
-                    info!("Raised physics timestep");
+                match constraint.increase_timestep() {
+                    Err(error) => warn!("Failed to raised physics timestep! Error: {}", error),
+                    Ok(timestep) => {
+                        physical_world.set_timestep(timestep);
+                        info!("Raised physics timestep to {} seconds", timestep);
+                    }
                 }
             }
         }

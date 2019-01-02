@@ -73,7 +73,7 @@ impl TimeStepConstraint {
     }
 
     /// Increase the timestep. This corresponds to fewer updates per seconds.
-    pub fn increase_timestep(&mut self) -> Result<(), TimeStepChangeError> {
+    pub fn increase_timestep(&mut self) -> Result<f32, TimeStepChangeError> {
         if self.current_index >= self.time_steps.len() - 1 {
             return Err(TimeStepChangeError::MaximumTimestepReached);
         }
@@ -82,7 +82,7 @@ impl TimeStepConstraint {
         }
         self.current_index += 1;
         self.change_time = Instant::now();
-        Ok(())
+        Ok(self.current_timestep())
     }
 
     /// Get the currently used timestep.
