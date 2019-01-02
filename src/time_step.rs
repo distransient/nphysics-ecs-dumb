@@ -11,6 +11,12 @@ pub enum TimeStep {
     SemiFixed(TimeStepConstraint),
 }
 
+impl Default for TimeStep {
+    fn default() -> Self {
+        TimeStep::Fixed(1. / 120.)
+    }
+}
+
 /// Error when trying to change the actual timestep for a semi-fixed timestep.
 #[derive(Debug)]
 pub enum TimeStepChangeError {
