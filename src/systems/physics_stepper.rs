@@ -35,12 +35,30 @@ impl<'a> System<'a> for PhysicsStepperSystem {
 
     // Simulate world using the current time frame
     fn run(&mut self, (mut physical_world, time): Self::SystemData) {
-        let timestep = match &self.intended_timestep {
-            TimeStep::Fixed(timestep) => *timestep,
-            TimeStep::SemiFixed(constraint) => constraint.current_timestep(),
+        let (timestep, mut change_timestep) = match &mut self.intended_timestep {
+            TimeStep::Fixed(timestep) => (*timestep, false),
+            TimeStep::SemiFixed(constraint) => {
+                if constraint.should_increase_timestep() {
+                    match constraint.increase_timestep() {
+                        Err(error) => {
+                            warn!("Failed to raise physics timestep! Error: {}", error);
+                            (constraint.current_timestep(), false)
+                        }
+                        Ok(new_timestep) => {
+                            info!("Raising physics timestep to {} seconds", new_timestep);
+                            (new_timestep, true)
+                        }
+                    }
+                } else {
+                    (constraint.current_timestep(), false)
+                }
+            }
         };
-        if physical_world.timestep() != timestep {
+        if physical_world.timestep() != timestep && !change_timestep {
             warn!("Physics world timestep out of sync with intended timestep! Leave me alone!!!");
+            change_timestep = true;
+        }
+        if change_timestep {
             physical_world.set_timestep(timestep);
         }
 
@@ -53,16 +71,9 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             steps += 1;
         }
 
-        if steps > self.max_timesteps {
-            if let TimeStep::SemiFixed(constraint) = &mut self.intended_timestep {
-                match constraint.increase_timestep() {
-                    Err(error) => warn!("Failed to raise physics timestep! Error: {}", error),
-                    Ok(timestep) => {
-                        physical_world.set_timestep(timestep);
-                        info!("Raised physics timestep to {} seconds", timestep);
-                    }
-                }
-            }
+        if let TimeStep::SemiFixed(constraint) = &mut self.intended_timestep {
+            let is_running_slow = steps > self.max_timesteps;
+            constraint.set_running_slow(is_running_slow);
         }
     }
 }
