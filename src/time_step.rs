@@ -91,6 +91,19 @@ impl TimeStepConstraint {
         Ok(self.current_timestep())
     }
 
+    /// Decrease the timestep. This corresponds to more updates per second.
+    pub fn decrease_timestep(&mut self) -> Result<f32, TimeStepChangeError> {
+        if self.current_index <= 0 {
+            return Err(TimeStepChangeError::MinimumTimestepReached);
+        }
+        if let Some(remaining) = self.minimum_age.checked_sub(self.change_time.elapsed()) {
+            return Err(TimeStepChangeError::MinimumAgeNotReached(remaining));
+        }
+        self.current_index -= 1;
+        self.change_time = Instant::now();
+        Ok(self.current_timestep())
+    }
+
     /// Get the currently used timestep.
     pub fn current_timestep(&self) -> f32 {
         self.time_steps[self.current_index]
