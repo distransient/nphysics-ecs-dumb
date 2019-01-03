@@ -2,12 +2,17 @@ use crate::time_step::TimeStep;
 use crate::PhysicsWorld;
 use amethyst::core::Time;
 use amethyst::ecs::{Read, System, WriteExpect};
+use std::time::Instant;
+
+/// Falloff factor for calculating the moving average step time.
+const AVERAGE_STEP_TIME_FALLOFF: f32 = 0.33;
 
 /// Simulates a step of the physics world.
 pub struct PhysicsStepperSystem {
     intended_timestep: TimeStep,
     max_timesteps: i32,
     time_accumulator: f32,
+    avg_step_time: Option<f32>,
 }
 
 impl Default for PhysicsStepperSystem {
@@ -16,6 +21,7 @@ impl Default for PhysicsStepperSystem {
             intended_timestep: TimeStep::Fixed(1. / 120.),
             max_timesteps: 10,
             time_accumulator: 0.,
+            avg_step_time: None,
         }
     }
 }
@@ -26,6 +32,7 @@ impl PhysicsStepperSystem {
             intended_timestep,
             max_timesteps,
             time_accumulator: 0.,
+            avg_step_time: None,
         }
     }
 }
@@ -38,7 +45,22 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         let (timestep, mut change_timestep) = match &mut self.intended_timestep {
             TimeStep::Fixed(timestep) => (*timestep, false),
             TimeStep::SemiFixed(constraint) => {
-                if constraint.should_increase_timestep() {
+                let should_increase_timestep = if constraint.should_increase_timestep() {
+                    true
+                } else if let Some(avg_step) = self.avg_step_time {
+                    // If the timestep is smaller than it takes to simulate that step, we have a problem.
+                    // As simulated time is affected by the time scale, simulated time step / time scale
+                    // is the maximum real time the step may take, so we take that into account here.
+                    if constraint.current_timestep() < avg_step * time.time_scale() {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+
+                if should_increase_timestep {
                     match constraint.increase_timestep() {
                         Err(error) => {
                             warn!("Failed to raise physics timestep! Error: {}", error);
@@ -59,6 +81,8 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             change_timestep = true;
         }
         if change_timestep {
+            // reset average when changing timestep
+            self.avg_step_time = None;
             physical_world.set_timestep(timestep);
         }
 
@@ -66,12 +90,32 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         let mut steps = 0;
 
         while steps <= self.max_timesteps && self.time_accumulator >= timestep {
+            let physics_time = Instant::now();
+
             physical_world.step();
+
+            let physics_time = physics_time.elapsed();
+            let physics_time =
+                physics_time.as_secs() as f32 + physics_time.subsec_nanos() as f32 * 1e-9;
+            self.avg_step_time = Some(match self.avg_step_time {
+                None => physics_time,
+                Some(avg) => {
+                    // calculate exponentially weighted moving average
+                    // basic formula: AVG_n = alpha * value_n + (1 - alpha) * AVG_n-1
+                    avg + AVERAGE_STEP_TIME_FALLOFF * (physics_time - avg)
+                }
+            });
             self.time_accumulator -= timestep;
             steps += 1;
         }
 
+        debug!(
+            "Average time per physics step: {:.8} seconds",
+            self.avg_step_time.unwrap_or_default()
+        );
+
         if let TimeStep::SemiFixed(constraint) = &mut self.intended_timestep {
+            // Shouldn't really happen anymore I think?
             let is_running_slow = steps > self.max_timesteps;
             constraint.set_running_slow(is_running_slow);
         }

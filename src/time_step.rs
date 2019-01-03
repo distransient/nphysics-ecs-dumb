@@ -93,18 +93,8 @@ impl TimeStepConstraint {
         if self.current_index >= self.time_steps.len() - 1 {
             return Err(TimeStepChangeError::MaximumTimestepReached);
         }
-        let running_slow_since = match self.running_slow_since {
-            Some(time) => time,
-            None => return Err(TimeStepChangeError::NotRunningSlow),
-        };
-        if let Some(remaining) = self
-            .minimum_slow_time
-            .checked_sub(running_slow_since.elapsed())
-        {
-            return Err(TimeStepChangeError::MinimumTimeNotReached(remaining));
-        }
         self.current_index += 1;
-        self.running_slow_since = None;
+        self.set_running_slow(false);
         Ok(self.current_timestep())
     }
 
@@ -115,18 +105,8 @@ impl TimeStepConstraint {
         if self.current_index <= 0 {
             return Err(TimeStepChangeError::MinimumTimestepReached);
         }
-        let running_slow_since = match self.running_slow_since {
-            Some(time) => time,
-            None => return Err(TimeStepChangeError::NotRunningSlow),
-        };
-        if let Some(remaining) = self
-            .minimum_slow_time
-            .checked_sub(running_slow_since.elapsed())
-        {
-            return Err(TimeStepChangeError::MinimumTimeNotReached(remaining));
-        }
         self.current_index -= 1;
-        self.running_slow_since = None;
+        self.set_running_slow(false);
         Ok(self.current_timestep())
     }
 
