@@ -101,7 +101,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             steps += 1;
         }
 
-        debug!(
+        trace!(
             "Average time per physics step: {:.8} seconds",
             self.avg_step_time.unwrap_or_default()
         );
