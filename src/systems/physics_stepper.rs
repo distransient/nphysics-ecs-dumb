@@ -45,31 +45,23 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         let (timestep, mut change_timestep) = match &mut self.intended_timestep {
             TimeStep::Fixed(timestep) => (*timestep, false),
             TimeStep::SemiFixed(constraint) => {
-                let should_increase_timestep = if constraint.should_increase_timestep() {
-                    true
-                } else if let Some(avg_step) = self.avg_step_time {
+                if let Some(avg_step) = self.avg_step_time {
                     // If the timestep is smaller than it takes to simulate that step, we have a problem.
                     // As simulated time is affected by the time scale, simulated time step / time scale
                     // is the maximum real time the step may take, so we take that into account here.
                     if constraint.current_timestep() < avg_step * time.time_scale() {
-                        true
+                        match constraint.increase_timestep() {
+                            Err(error) => {
+                                warn!("Failed to raise physics timestep! Error: {}", error);
+                                (constraint.current_timestep(), false)
+                            }
+                            Ok(new_timestep) => {
+                                info!("Raising physics timestep to {} seconds", new_timestep);
+                                (new_timestep, true)
+                            }
+                        }
                     } else {
-                        false
-                    }
-                } else {
-                    false
-                };
-
-                if should_increase_timestep {
-                    match constraint.increase_timestep() {
-                        Err(error) => {
-                            warn!("Failed to raise physics timestep! Error: {}", error);
-                            (constraint.current_timestep(), false)
-                        }
-                        Ok(new_timestep) => {
-                            info!("Raising physics timestep to {} seconds", new_timestep);
-                            (new_timestep, true)
-                        }
+                        (constraint.current_timestep(), false)
                     }
                 } else {
                     (constraint.current_timestep(), false)
@@ -113,11 +105,5 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             "Average time per physics step: {:.8} seconds",
             self.avg_step_time.unwrap_or_default()
         );
-
-        if let TimeStep::SemiFixed(constraint) = &mut self.intended_timestep {
-            // Shouldn't really happen anymore I think?
-            let is_running_slow = steps > self.max_timesteps;
-            constraint.set_running_slow(is_running_slow);
-        }
     }
 }

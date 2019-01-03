@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    time::{Duration, Instant},
-};
+use std::cmp::Ordering;
 
 /// The type of time step to use for the physics simulation.
 pub enum TimeStep {
@@ -24,10 +21,6 @@ pub enum TimeStepChangeError {
     MinimumTimestepReached,
     /// No larger timestep available.
     MaximumTimestepReached,
-    /// Physics haven't been running slow for long enough to change the timestep.
-    MinimumTimeNotReached(Duration),
-    /// Physics aren't running slow.
-    NotRunningSlow,
 }
 
 impl std::fmt::Display for TimeStepChangeError {
@@ -39,11 +32,6 @@ impl std::fmt::Display for TimeStepChangeError {
             TimeStepChangeError::MinimumTimestepReached => {
                 write!(f, "No smaller timestep available!")
             }
-            TimeStepChangeError::MinimumTimeNotReached(remaining) => {
-                let time = remaining.as_secs() as f32 + remaining.subsec_nanos() as f32 * 1e-9;
-                write!(f, "Timestep can be changed in {:.4} seconds", time)
-            }
-            TimeStepChangeError::NotRunningSlow => write!(f, "Simulation is not running slow"),
         }
     }
 }
@@ -54,10 +42,6 @@ pub struct TimeStepConstraint {
     time_steps: Vec<f32>,
     /// Index of the currently used timestep.
     current_index: usize,
-    /// Time when the simulation started running slow.
-    running_slow_since: Option<Instant>,
-    /// Minimum time the simulation has to be running slow before the timestep is changed.
-    minimum_slow_time: Duration,
 }
 
 impl TimeStepConstraint {
@@ -68,7 +52,7 @@ impl TimeStepConstraint {
     /// # Panics
     ///
     /// This constructor will panic if no timesteps are given or if any negative timesteps are specified.
-    pub fn new(time_steps: impl Into<Vec<f32>>, minimum_slow_time: Duration) -> Self {
+    pub fn new(time_steps: impl Into<Vec<f32>>) -> Self {
         let mut time_steps = time_steps.into();
         assert!(
             !time_steps.is_empty(),
@@ -81,8 +65,6 @@ impl TimeStepConstraint {
         Self {
             time_steps,
             current_index: 0,
-            minimum_slow_time,
-            running_slow_since: None,
         }
     }
 
@@ -94,7 +76,6 @@ impl TimeStepConstraint {
             return Err(TimeStepChangeError::MaximumTimestepReached);
         }
         self.current_index += 1;
-        self.set_running_slow(false);
         Ok(self.current_timestep())
     }
 
@@ -106,39 +87,11 @@ impl TimeStepConstraint {
             return Err(TimeStepChangeError::MinimumTimestepReached);
         }
         self.current_index -= 1;
-        self.set_running_slow(false);
         Ok(self.current_timestep())
     }
 
     /// Get the currently used timestep.
     pub fn current_timestep(&self) -> f32 {
         self.time_steps[self.current_index]
-    }
-
-    /// Set whether physics are currently running slow or not. Intended to be called every frame as changing
-    /// values only happens when `is_running_slow` changes between calls.
-    ///
-    /// Shouldn't be called from outside the `PhysicsStepperSystem`, otherwise bad things may happen.
-    pub fn set_running_slow(&mut self, is_running_slow: bool) {
-        self.running_slow_since = match (self.running_slow_since, is_running_slow) {
-            (None, true) => {
-                warn!("Physics seem to be running slow! Timestep will be changed if we keep running slow.");
-                Some(Instant::now())
-            }
-            (Some(_), false) => {
-                debug!("Physics aren't running slow anymore.");
-                None
-            }
-            (_, _) => self.running_slow_since,
-        }
-    }
-
-    /// Get whether physics have been running slow for the specified minimum time and thus the timestep should
-    /// be increased.
-    pub fn should_increase_timestep(&self) -> bool {
-        match self.running_slow_since {
-            None => false,
-            Some(time) => time.elapsed() > self.minimum_slow_time,
-        }
     }
 }
