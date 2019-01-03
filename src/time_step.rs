@@ -94,4 +94,13 @@ impl TimeStepConstraint {
     pub fn current_timestep(&self) -> f32 {
         self.time_steps[self.current_index]
     }
+
+    /// Get next smaller timestep.
+    pub fn smaller_timestep(&self) -> Option<f32> {
+        if self.current_index <= 0 {
+            None
+        } else {
+            Some(self.time_steps[self.current_index - 1])
+        }
+    }
 }

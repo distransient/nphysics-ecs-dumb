@@ -45,27 +45,41 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         let (timestep, mut change_timestep) = match &mut self.intended_timestep {
             TimeStep::Fixed(timestep) => (*timestep, false),
             TimeStep::SemiFixed(constraint) => {
+                let mut timestep = (constraint.current_timestep(), false);
                 if let Some(avg_step) = self.avg_step_time {
                     // If the timestep is smaller than it takes to simulate that step, we have a problem.
                     // As simulated time is affected by the time scale, simulated time step / time scale
                     // is the maximum real time the step may take, so we take that into account here.
-                    if constraint.current_timestep() < avg_step * time.time_scale() {
+                    let adjusted_step_time = avg_step * time.time_scale();
+                    if constraint.current_timestep() < adjusted_step_time {
                         match constraint.increase_timestep() {
                             Err(error) => {
-                                warn!("Failed to raise physics timestep! Error: {}", error);
-                                (constraint.current_timestep(), false)
+                                warn!("Failed to increase physics timestep! Error: {}", error);
                             }
                             Ok(new_timestep) => {
-                                info!("Raising physics timestep to {} seconds", new_timestep);
-                                (new_timestep, true)
+                                info!("Increasing physics timestep to {:.8} seconds", new_timestep);
+                                timestep = (new_timestep, true);
                             }
                         }
-                    } else {
-                        (constraint.current_timestep(), false)
+                    } else if let Some(smaller_timestep) = constraint.smaller_timestep() {
+                        // Check if we have enough time to simulate with a smaller timestep.
+                        if smaller_timestep > adjusted_step_time {
+                            match constraint.decrease_timestep() {
+                                Err(error) => {
+                                    warn!("Failed to decrease physics timestep! Error: {}", error);
+                                }
+                                Ok(new_timestep) => {
+                                    info!(
+                                        "Decreasing physics timestep to {:.8} seconds",
+                                        new_timestep
+                                    );
+                                    timestep = (new_timestep, true);
+                                }
+                            }
+                        }
                     }
-                } else {
-                    (constraint.current_timestep(), false)
                 }
+                timestep
             }
         };
         if physical_world.timestep() != timestep && !change_timestep {
