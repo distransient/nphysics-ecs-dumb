@@ -176,11 +176,10 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(
             PhysicsBundle::new()
                 .with_dep(&["transform_system"])
-                .with_timestep(TimeStep::SemiFixed(TimeStepConstraint::new(vec![
-                    1. / 240.,
-                    1. / 120.,
-                    1. / 60.,
-                ])))
+                .with_timestep(TimeStep::SemiFixed(TimeStepConstraint::new(
+                    vec![1. / 240., 1. / 120., 1. / 60.],
+                    0.3,
+                )))
                 .with_max_timesteps(20),
         )?
         .with_bundle(RenderBundle::new(pipe, Some(display_config)))?;

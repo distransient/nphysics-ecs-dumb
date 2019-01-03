@@ -42,17 +42,19 @@ pub struct TimeStepConstraint {
     time_steps: Vec<f32>,
     /// Index of the currently used timestep.
     current_index: usize,
+    /// Fraction of frame time physics are allowed to take.
+    max_physics_time_fraction: f32,
 }
 
 impl TimeStepConstraint {
-    /// Creates a new `TimeStepConstraint` from the specified timesteps to use and the minimum time of running
-    /// slowly before changing timesteps. The timestep will be increased if physics have been lagging behind for
-    /// the last `minimum_slow_time`.
+    /// Creates a new `TimeStepConstraint` from the specified timesteps to use and the maximum physics
+    /// time fraction. If physics take more than the specified fraction of frame time, the timestep
+    /// will be increased.
     ///
     /// # Panics
     ///
     /// This constructor will panic if no timesteps are given or if any negative timesteps are specified.
-    pub fn new(time_steps: impl Into<Vec<f32>>) -> Self {
+    pub fn new(time_steps: impl Into<Vec<f32>>, max_physics_time_fraction: f32) -> Self {
         let mut time_steps = time_steps.into();
         assert!(
             !time_steps.is_empty(),
@@ -65,6 +67,7 @@ impl TimeStepConstraint {
         Self {
             time_steps,
             current_index: 0,
+            max_physics_time_fraction,
         }
     }
 
@@ -102,5 +105,10 @@ impl TimeStepConstraint {
         } else {
             Some(self.time_steps[self.current_index - 1])
         }
+    }
+
+    /// Get the fraction of frame time physics are allowed to take.
+    pub fn max_physics_time_fraction(&self) -> f32 {
+        self.max_physics_time_fraction
     }
 }

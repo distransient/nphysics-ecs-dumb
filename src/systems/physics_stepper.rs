@@ -49,8 +49,10 @@ impl<'a> System<'a> for PhysicsStepperSystem {
                 if let Some(avg_step) = self.avg_step_time {
                     // If the timestep is smaller than it takes to simulate that step, we have a problem.
                     // As simulated time is affected by the time scale, simulated time step / time scale
-                    // is the maximum real time the step may take, so we take that into account here.
-                    let adjusted_step_time = avg_step * time.time_scale();
+                    // is the maximum real time the step may take, so we take that into account here. We
+                    // also take into account the maximum fraction of time physics are allowed to take
+                    let adjusted_step_time =
+                        avg_step * time.time_scale() / constraint.max_physics_time_fraction();
                     if constraint.current_timestep() < adjusted_step_time {
                         match constraint.increase_timestep() {
                             Err(error) => {
