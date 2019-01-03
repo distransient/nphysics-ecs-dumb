@@ -6,6 +6,9 @@ use std::time::Instant;
 
 /// Falloff factor for calculating the moving average step time.
 const AVERAGE_STEP_TIME_FALLOFF: f32 = 0.33;
+/// Factor to apply to available physics time before decreasing the timestep. Makes sure that the
+/// timestep isn't switched too eagerly.
+const TIME_STEP_DECREASE_HYSTERESIS: f32 = 1.5;
 
 /// Simulates a step of the physics world.
 pub struct PhysicsStepperSystem {
@@ -53,7 +56,8 @@ impl<'a> System<'a> for PhysicsStepperSystem {
                     // also take into account the maximum fraction of time physics are allowed to take
                     let adjusted_step_time =
                         avg_step * time.time_scale() / constraint.max_physics_time_fraction();
-                    if constraint.current_timestep() < adjusted_step_time {
+                    constraint.set_running_slow(constraint.current_timestep() < adjusted_step_time);
+                    if constraint.should_increase_timestep() {
                         match constraint.increase_timestep() {
                             Err(error) => {
                                 warn!("Failed to increase physics timestep! Error: {}", error);
@@ -65,7 +69,10 @@ impl<'a> System<'a> for PhysicsStepperSystem {
                         }
                     } else if let Some(smaller_timestep) = constraint.smaller_timestep() {
                         // Check if we have enough time to simulate with a smaller timestep.
-                        if smaller_timestep > adjusted_step_time {
+                        constraint.set_running_fast(
+                            smaller_timestep > adjusted_step_time * TIME_STEP_DECREASE_HYSTERESIS,
+                        );
+                        if constraint.should_decrease_timestep() {
                             match constraint.decrease_timestep() {
                                 Err(error) => {
                                     warn!("Failed to decrease physics timestep! Error: {}", error);
@@ -121,5 +128,13 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             "Average time per physics step: {:.8} seconds",
             self.avg_step_time.unwrap_or_default()
         );
+
+        if steps > self.max_timesteps {
+            // This shouldn't normally happen. If it does, one of the following might be true:
+            // - TimeStep::Fixed was chosen too small
+            // - TimeStep::SemiFixed can't increase the timestep
+            // - Game itself is running slow, not leaving enough time for physics
+            warn!("Physics running slow!");
+        }
     }
 }

@@ -1,4 +1,7 @@
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    time::{Duration, Instant},
+};
 
 /// The type of time step to use for the physics simulation.
 pub enum TimeStep {
@@ -44,17 +47,55 @@ pub struct TimeStepConstraint {
     current_index: usize,
     /// Fraction of frame time physics are allowed to take.
     max_physics_time_fraction: f32,
+    /// Minimum time the simulation has to be running slow before the timestep is changed.
+    minimum_time_running_slow: Duration,
+    /// Minimum time the simulation has to be running fast before the timestep is changed.
+    minimum_time_running_fast: Duration,
+    /// Time when the simulation started running slow.
+    running_slow_since: Option<Instant>,
+    /// Time when the simulation started running fast.
+    running_fast_since: Option<Instant>,
 }
 
 impl TimeStepConstraint {
-    /// Creates a new `TimeStepConstraint` from the specified timesteps to use and the maximum physics
-    /// time fraction. If physics take more than the specified fraction of frame time, the timestep
-    /// will be increased.
+    /// Creates a new `TimeStepConstraint` from the specified timesteps to use, the maximum physics
+    /// time fraction and the minimum times before changing timestep.
+    ///
+    /// If physics take more than the specified fraction of simulated time, the timestep will be
+    /// increased. If physics with a smaller timestep would still take less than the specified
+    /// fraction of simulated time, the timestep will be decreased. Timesteps will only be changed
+    /// if physics are running fast/slow for the specified durations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let game_data = GameDataBuilder::default()
+    ///     .with_bundle(
+    ///         PhysicsBundle::new()
+    ///             .with_timestep(TimeStep::SemiFixed(TimeStepConstraint::new(
+    ///                 vec![1. / 240., 1. / 120., 1. / 60.],
+    ///                 0.4,
+    ///                 Duration::from_millis(50),
+    ///                 Duration::from_millis(500),
+    ///             )))
+    ///     )?
+    ///     ...
+    /// );
+    /// ```
+    /// Here physics will start out with a timestep of 1/240 seconds. If physics take more than 40% of
+    /// this timestep to simulate, it's running slowly. If it's running slowly for 50ms in a row, the
+    /// timestep will be increased to 1/120 seconds. If physics are running fast for 500ms in a row, the
+    /// timestep will be decreased again.
     ///
     /// # Panics
     ///
     /// This constructor will panic if no timesteps are given or if any negative timesteps are specified.
-    pub fn new(time_steps: impl Into<Vec<f32>>, max_physics_time_fraction: f32) -> Self {
+    pub fn new(
+        time_steps: impl Into<Vec<f32>>,
+        max_physics_time_fraction: f32,
+        minimum_time_running_slow: Duration,
+        minimum_time_running_fast: Duration,
+    ) -> Self {
         let mut time_steps = time_steps.into();
         assert!(
             !time_steps.is_empty(),
@@ -68,6 +109,10 @@ impl TimeStepConstraint {
             time_steps,
             current_index: 0,
             max_physics_time_fraction,
+            minimum_time_running_slow,
+            minimum_time_running_fast,
+            running_slow_since: None,
+            running_fast_since: None,
         }
     }
 
@@ -79,6 +124,8 @@ impl TimeStepConstraint {
             return Err(TimeStepChangeError::MaximumTimestepReached);
         }
         self.current_index += 1;
+        self.running_slow_since = None;
+        self.running_fast_since = None;
         Ok(self.current_timestep())
     }
 
@@ -90,6 +137,8 @@ impl TimeStepConstraint {
             return Err(TimeStepChangeError::MinimumTimestepReached);
         }
         self.current_index -= 1;
+        self.running_slow_since = None;
+        self.running_fast_since = None;
         Ok(self.current_timestep())
     }
 
@@ -110,5 +159,59 @@ impl TimeStepConstraint {
     /// Get the fraction of frame time physics are allowed to take.
     pub fn max_physics_time_fraction(&self) -> f32 {
         self.max_physics_time_fraction
+    }
+
+    /// Set whether physics are currently running slow or not. Intended to be called every frame as changing
+    /// values only happens when `is_running_slow` changes between calls.
+    ///
+    /// Shouldn't be called from outside the `PhysicsStepperSystem`, otherwise bad things may happen.
+    pub fn set_running_slow(&mut self, is_running_slow: bool) {
+        self.running_slow_since = match (self.running_slow_since, is_running_slow) {
+            (None, true) => {
+                warn!("Physics seem to be running slow! Timestep will be changed if we keep running slow.");
+                Some(Instant::now())
+            }
+            (Some(_), false) => {
+                debug!("Physics aren't running slow anymore.");
+                None
+            }
+            (_, _) => self.running_slow_since,
+        };
+    }
+
+    /// Set whether physics are currently running fast or not. Intended to be called every frame as changing
+    /// values only happens when `is_running_fast` changes between calls.
+    ///
+    /// Shouldn't be called from outside the `PhysicsStepperSystem`, otherwise bad things may happen.
+    pub fn set_running_fast(&mut self, is_running_fast: bool) {
+        self.running_fast_since = match (self.running_fast_since, is_running_fast) {
+            (None, true) => {
+                debug!("Physics seem to be running fast. Timestep will be changed if we keep running fast.");
+                Some(Instant::now())
+            }
+            (Some(_), false) => {
+                debug!("Physics aren't running fast anymore.");
+                None
+            }
+            (_, _) => self.running_fast_since,
+        };
+    }
+
+    /// Get whether physics have been running slow for the specified minimum time and thus the timestep should
+    /// be increased.
+    pub fn should_increase_timestep(&self) -> bool {
+        match self.running_slow_since {
+            None => false,
+            Some(time) => time.elapsed() > self.minimum_time_running_slow,
+        }
+    }
+
+    /// Get whether physics have been running fast for the specified minimum time and thus the timestep should
+    /// be decreased.
+    pub fn should_decrease_timestep(&self) -> bool {
+        match self.running_fast_since {
+            None => false,
+            Some(time) => time.elapsed() > self.minimum_time_running_fast,
+        }
     }
 }

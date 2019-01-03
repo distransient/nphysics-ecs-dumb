@@ -178,7 +178,9 @@ fn main() -> amethyst::Result<()> {
                 .with_dep(&["transform_system"])
                 .with_timestep(TimeStep::SemiFixed(TimeStepConstraint::new(
                     vec![1. / 240., 1. / 120., 1. / 60.],
-                    0.3,
+                    0.4,
+                    Duration::from_millis(50),
+                    Duration::from_millis(500),
                 )))
                 .with_max_timesteps(20),
         )?
