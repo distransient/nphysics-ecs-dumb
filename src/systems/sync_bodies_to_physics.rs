@@ -119,7 +119,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                     DynamicBody::RigidBody(ref mut rigid_body) => {
                         match physical_world.rigid_body_mut(rigid_body.handle.unwrap()) {
                             Some(physical_body) => {
-                                trace!("Updating rigid body in physics world with isometry: {}", position);
+                                trace!("Updating rigid body in physics world to `Transform` position.");
                                 match try_convert(transform.0) {
                                     Some(p) => {
                                         let position: Isometry<f32> = p;
