@@ -119,12 +119,17 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                     DynamicBody::RigidBody(ref mut rigid_body) => {
                         match physical_world.rigid_body_mut(rigid_body.handle.unwrap()) {
                             Some(physical_body) => {
-                                let position: Isometry<f32> = try_convert(transform.0).unwrap();
                                 trace!("Updating rigid body in physics world with isometry: {}", position);
-                                physical_body.set_position(position);
-                                physical_body.set_velocity(rigid_body.velocity);
-                                physical_body.apply_force(&rigid_body.external_forces);
-                                physical_body.set_status(rigid_body.body_status);
+                                match try_convert(transform.0) {
+                                    Some(p) => {
+                                        let position: Isometry<f32> = p;
+                                        physical_body.set_position(position);
+                                        physical_body.set_velocity(rigid_body.velocity);
+                                        physical_body.apply_force(&rigid_body.external_forces);
+                                        physical_body.set_status(rigid_body.body_status);
+                                    },
+                                    None => error!("Failed to convert entity position from `Transform` to physics systems"),
+                                }
 
                                 // if you changed the mass properties at all... too bad!
                             },
