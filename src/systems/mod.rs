@@ -24,7 +24,7 @@ pub const SYNC_BODIES_FROM_PHYSICS_SYSTEM: &str = "sync_bodies_from_physics_syst
 pub struct PhysicsBundle<'a> {
     dep: &'a [&'a str],
     timestep: TimeStep,
-    max_timesteps: i32,
+    timestep_iter_limit: i32,
 }
 
 impl Default for PhysicsBundle<'_> {
@@ -32,7 +32,7 @@ impl Default for PhysicsBundle<'_> {
         Self {
             dep: Default::default(),
             timestep: Default::default(),
-            max_timesteps: 10,
+            timestep_iter_limit: 10,
         }
     }
 }
@@ -54,8 +54,8 @@ impl<'a> PhysicsBundle<'a> {
     }
 
     /// Set the maximum number of physics timesteps to simulate in a single run of the `PhysicsStepperSystem`
-    pub fn with_max_timesteps(mut self, max_timesteps: i32) -> Self {
-        self.max_timesteps = max_timesteps;
+    pub fn with_timestep_iter_limit(mut self, timestep_iter_limit: i32) -> Self {
+        self.timestep_iter_limit = timestep_iter_limit;
         self
     }
 }
@@ -80,7 +80,7 @@ impl<'a, 'b, 'c> SystemBundle<'a, 'b> for PhysicsBundle<'c> {
         );
 
         builder.add(
-            PhysicsStepperSystem::new(self.timestep, self.max_timesteps),
+            PhysicsStepperSystem::new(self.timestep, self.timestep_iter_limit),
             PHYSICS_STEPPER_SYSTEM,
             &[
                 SYNC_BODIES_TO_PHYSICS_SYSTEM,

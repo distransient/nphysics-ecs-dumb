@@ -13,7 +13,7 @@ const TIME_STEP_DECREASE_HYSTERESIS: f32 = 1.5;
 /// Simulates a step of the physics world.
 pub struct PhysicsStepperSystem {
     intended_timestep: TimeStep,
-    max_timesteps: i32,
+    timestep_iter_limit: i32,
     time_accumulator: f32,
     avg_step_time: Option<f32>,
 }
@@ -22,7 +22,7 @@ impl Default for PhysicsStepperSystem {
     fn default() -> Self {
         PhysicsStepperSystem {
             intended_timestep: TimeStep::Fixed(1. / 120.),
-            max_timesteps: 10,
+            timestep_iter_limit: 10,
             time_accumulator: 0.,
             avg_step_time: None,
         }
@@ -30,10 +30,10 @@ impl Default for PhysicsStepperSystem {
 }
 
 impl PhysicsStepperSystem {
-    pub fn new(intended_timestep: TimeStep, max_timesteps: i32) -> Self {
+    pub fn new(intended_timestep: TimeStep, timestep_iter_limit: i32) -> Self {
         PhysicsStepperSystem {
             intended_timestep,
-            max_timesteps,
+            timestep_iter_limit,
             time_accumulator: 0.,
             avg_step_time: None,
         }
@@ -104,7 +104,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         self.time_accumulator += time.delta_seconds();
         let mut steps = 0;
 
-        while steps <= self.max_timesteps && self.time_accumulator >= timestep {
+        while steps <= self.timestep_iter_limit && self.time_accumulator >= timestep {
             let physics_time = Instant::now();
 
             physical_world.step();
@@ -129,7 +129,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             self.avg_step_time.unwrap_or_default()
         );
 
-        if steps > self.max_timesteps {
+        if steps > self.timestep_iter_limit {
             // This shouldn't normally happen. If it does, one of the following might be true:
             // - TimeStep::Fixed was chosen too small
             // - TimeStep::SemiFixed can't increase the timestep
