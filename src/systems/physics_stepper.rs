@@ -93,12 +93,13 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             }
         };
 
-        if (physical_world.timestep() - timestep).abs() < EPSILON && !change_timestep {
+        if (physical_world.timestep() - timestep).abs() < EPSILON * 10. && !change_timestep {
             warn!("Physics world timestep out of sync with intended timestep! Physics timestep: {}, Requested timestep: {}", physical_world.timestep(), timestep);
             change_timestep = true;
         }
 
         if change_timestep {
+            trace!("Changing physics timestep to {}", timestep);
             // reset average when changing timestep
             self.avg_step_time = None;
             physical_world.set_timestep(timestep);
@@ -110,6 +111,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         while steps <= self.timestep_iter_limit && self.time_accumulator >= timestep {
             let physics_time = Instant::now();
 
+            trace!("Stepping physics system. Step: {}, Timestep: {}, Time accumulator: {}", steps, timestep, self.time_accumulator);
             physical_world.step();
 
             let physics_time = physics_time.elapsed();
