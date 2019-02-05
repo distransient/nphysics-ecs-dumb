@@ -105,7 +105,6 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
             } else if modified_transforms.contains(id) || modified_physics_bodies.contains(id) {
                 trace!("Detected changed dynamics body with id {}", id);
                 if let Some(physical_body) = physical_world.rigid_body_mut(body.handle.unwrap()) {
-
                     // if you changed the mass properties at all... too bad!
                     match try_convert(transform.0) {
                         Some(p) => {
@@ -121,7 +120,9 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                             body.external_forces = Force::<f32>::zero();
                             physical_body.set_status(body.body_status);
                         }
-                        None => error!("Failed to convert entity position from `Transform` to physics systems"),
+                        None => error!(
+                            "Failed to convert entity position from `Transform` to physics systems"
+                        ),
                     }
                 }
             }

@@ -140,9 +140,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 }
             }).collect::<Vec<_>>();
 
-        contact_events.iter_write(
-            contact_ev.into_iter()
-        );
+        contact_events.iter_write(contact_ev.into_iter());
 
         let proximity_ev = collision_world
                 .proximity_events()
@@ -161,9 +159,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     }
                 }).collect::<Vec<_>>();
 
-        proximity_events.iter_write(
-            proximity_ev.into_iter()
-        );
+        proximity_events.iter_write(proximity_ev.into_iter());
     }
 }
 
