@@ -94,7 +94,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         };
 
         if (physical_world.timestep() - timestep).abs() < EPSILON && !change_timestep {
-            warn!("Physics world timestep out of sync with intended timestep! Leave me alone!!!");
+            warn!("Physics world timestep out of sync with intended timestep! Physics timestep: {}, Requested timestep: {}", physical_world.timestep(), timestep);
             change_timestep = true;
         }
 
