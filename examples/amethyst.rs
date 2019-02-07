@@ -148,6 +148,37 @@ impl SimpleState for GameState {
             material.clone(),
         );*/
     }
+
+    fn handle_event(
+        &mut self,
+        data: StateData<'_, GameData<'_, '_>>,
+        event: StateEvent,
+    ) -> SimpleTrans {
+        let w = data.world;
+        if let StateEvent::Window(event) = &event {
+            // Exit if user hits Escape or closes the window
+            if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
+                return Trans::Quit;
+            }
+
+            // Change the timestep between 1/60 and a/120
+            if is_key_down(&event, VirtualKeyCode::T) {
+                let target_timestep = if let TimeStep::Fixed(1/120.) = data.world.read_resource::<TimeStep>() {
+                    1/60.
+                } else {
+                    1/120.
+                };
+
+                *data.world.write_resource::<TimeStep>() = TimeStep::Fixed(target_timestep);
+                info!("Setting timestep to {}", target_timestep);
+            }
+
+            // Reset the example
+            if is_key_down(&event, VirtualKeyCode::Space) {
+                
+            }
+        }
+        Trans::None
 }
 
 fn main() -> amethyst::Result<()> {

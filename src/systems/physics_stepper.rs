@@ -13,7 +13,6 @@ const TIME_STEP_DECREASE_HYSTERESIS: f32 = 1.5;
 
 /// Simulates a step of the physics world.
 pub struct PhysicsStepperSystem {
-    intended_timestep: TimeStep,
     timestep_iter_limit: i32,
     time_accumulator: f32,
     avg_step_time: Option<f32>,
@@ -22,7 +21,6 @@ pub struct PhysicsStepperSystem {
 impl Default for PhysicsStepperSystem {
     fn default() -> Self {
         PhysicsStepperSystem {
-            intended_timestep: TimeStep::Fixed(1. / 120.),
             timestep_iter_limit: 10,
             time_accumulator: 0.,
             avg_step_time: None,
@@ -31,9 +29,8 @@ impl Default for PhysicsStepperSystem {
 }
 
 impl PhysicsStepperSystem {
-    pub fn new(intended_timestep: TimeStep, timestep_iter_limit: i32) -> Self {
+    pub fn new(timestep_iter_limit: i32) -> Self {
         PhysicsStepperSystem {
-            intended_timestep,
             timestep_iter_limit,
             time_accumulator: 0.,
             avg_step_time: None,
@@ -42,7 +39,7 @@ impl PhysicsStepperSystem {
 }
 
 impl<'a> System<'a> for PhysicsStepperSystem {
-    type SystemData = (WriteExpect<'a, PhysicsWorld>, Read<'a, Time>);
+    type SystemData = (WriteExpect<'a, PhysicsWorld>, Read<'a, Time>, Read<'a, TimeStep>);
 
     // Simulate world using the current time frame
     fn run(&mut self, (mut physical_world, time): Self::SystemData) {
@@ -93,7 +90,7 @@ impl<'a> System<'a> for PhysicsStepperSystem {
             }
         };
 
-        if (physical_world.timestep() - timestep).abs() < EPSILON * 10. && !change_timestep {
+        if (physical_world.timestep() - timestep).abs() > EPSILON && !change_timestep {
             warn!("Physics world timestep out of sync with intended timestep! Physics timestep: {}, Requested timestep: {}", physical_world.timestep(), timestep);
             change_timestep = true;
         }
