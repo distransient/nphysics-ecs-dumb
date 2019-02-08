@@ -1,7 +1,7 @@
 use crate::time_step::TimeStep;
 use crate::PhysicsWorld;
 use amethyst::core::Time;
-use amethyst::ecs::{Read, System, WriteExpect};
+use amethyst::ecs::{Read, System, WriteExpect, Write};
 use std::f32::EPSILON;
 use std::time::Instant;
 
@@ -39,11 +39,11 @@ impl PhysicsStepperSystem {
 }
 
 impl<'a> System<'a> for PhysicsStepperSystem {
-    type SystemData = (WriteExpect<'a, PhysicsWorld>, Read<'a, Time>, Read<'a, TimeStep>);
+    type SystemData = (WriteExpect<'a, PhysicsWorld>, Read<'a, Time>, Write<'a, TimeStep>);
 
     // Simulate world using the current time frame
-    fn run(&mut self, (mut physical_world, time): Self::SystemData) {
-        let (timestep, mut change_timestep) = match &mut self.intended_timestep {
+    fn run(&mut self, (mut physical_world, time, mut intended_timestep): Self::SystemData) {
+        let (timestep, mut change_timestep) = match &mut *intended_timestep {
             TimeStep::Fixed(timestep) => (*timestep, false),
             TimeStep::SemiFixed(constraint) => {
                 let mut timestep = (constraint.current_timestep(), false);
