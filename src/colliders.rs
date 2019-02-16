@@ -1,7 +1,9 @@
+use ncollide3d::world::CollisionGroups;
 use amethyst::ecs::{Component, DenseVecStorage, FlaggedStorage};
 use nalgebra::Isometry3;
 use ncollide::{shape::ShapeHandle, world::GeometricQueryType};
-use nphysics::object::{ColliderHandle, Material};
+use nphysics::object::ColliderHandle;
+use nphysics::material::BasicMaterial;
 
 #[derive(Clone, Serialize, Deserialize, Debug, new)]
 pub enum ColliderType {
@@ -31,7 +33,7 @@ impl ColliderType {
     }
 }
 
-#[derive(new, Clone, Builder, Debug)]
+#[derive(new, Clone, Builder)]
 #[builder(pattern = "owned")]
 pub struct Collider {
     #[new(default)]
@@ -42,8 +44,8 @@ pub struct Collider {
     pub margin: f32,
     pub shape: ShapeHandle<f32>,
     pub offset_from_parent: Isometry3<f32>,
-    pub physics_material: Material<f32>,
-    pub collision_group: u32,
+    pub physics_material: BasicMaterial<f32>,
+    pub collision_group: CollisionGroups,
     pub query_type: ColliderType,
 }
 

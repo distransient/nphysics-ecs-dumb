@@ -10,6 +10,8 @@ use core::ops::Deref;
 use nalgebra::try_convert;
 use nphysics3d::math::{Force, Inertia, Isometry};
 
+use nphysics3d::object::{Body};
+
 #[derive(Default)]
 pub struct SyncBodiesToPhysicsSystem {
     transforms_reader_id: Option<ReaderId<ComponentEvent>>,
@@ -64,7 +66,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
 
         // Update simulation world with the value of Components flagged as changed
         #[allow(unused_mut)]
-        for (_entity, transform, mut body, id) in (
+        for (entity, transform, mut body, id) in (
             &entities,
             &transforms,
             &mut physics_bodies,
@@ -100,6 +102,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                 physical_body.apply_force(&body.external_forces);
                 body.external_forces = Force::<f32>::zero();
                 physical_body.set_status(body.body_status);
+                physical_body.set_user_data(Some(Box::new(entity)));
 
                 trace!("Velocity and external forces applied, external forces reset to zero, for body with handle: {:?}", body.handle);
             } else if modified_transforms.contains(id) || modified_physics_bodies.contains(id) {

@@ -81,43 +81,45 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     collider.physics_material.clone(),
                 ));
 
-                trace!("Inserted collider to world with values: {:?}", collider);
+                //trace!("Inserted collider to world with values: {:?}", collider);
 
                 let prediction = physical_world.prediction();
                 let angular_prediction = physical_world.angular_prediction();
 
-                let collision_world = physical_world.collision_world_mut();
+                let collision_world = physical_world.collider_world_mut();
 
                 let collider_object = collision_world
-                    .collision_object_mut(collider.handle.unwrap())
+                    .collider_mut(collider.handle.unwrap())
                     .unwrap();
 
-                collider_object.set_query_type(collider.query_type.to_geometric_query_type(
-                    collider.margin,
-                    prediction,
-                    angular_prediction,
-                ));
+                collision_world.as_collider_world().set_query_type(
+                    collider.handle.unwrap(),
+                    collider.query_type.to_geometric_query_type(
+                        collider.margin,
+                        prediction,
+                        angular_prediction)
+                );
 
                 let collider_handle = collider_object.handle();
 
-                collision_world.set_collision_group(collider_handle, collider.collision_group);
+                collision_world.set_collision_groups(collider_handle, collider.collision_group);
             } else if modified_colliders.contains(id) || modified_colliders.contains(id) {
                 trace!("Detected changed collider with id {:?}", id);
 
                 let prediction = physical_world.prediction();
                 let angular_prediction = physical_world.angular_prediction();
 
-                let collision_world = physical_world.collision_world_mut();
+                let collision_world = physical_world.collider_world_mut();
                 let collider_handle = collision_world
-                    .collision_object(collider.handle.unwrap())
+                    .collider(collider.handle.unwrap())
                     .unwrap()
                     .handle();
 
-                collision_world.set_collision_group(collider_handle, collider.collision_group);
+                collision_world.set_collision_groups(collider_handle, collider.collision_group);
                 collision_world.set_shape(collider_handle, collider.shape.clone());
 
                 let collider_object = collision_world
-                    .collision_object_mut(collider.handle.unwrap())
+                    .collider_mut(collider.handle.unwrap())
                     .unwrap();
 
                 let parent = if let Some(rb) = rigid_bodies.get(entity) {
@@ -139,11 +141,15 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 };
 
                 collider_object.set_position(position);
-                collider_object.set_query_type(collider.query_type.to_geometric_query_type(
-                    collider.margin,
-                    prediction,
-                    angular_prediction,
-                ));
+                
+                collision_world.as_collider_world().set_query_type(
+                    collider.handle.unwrap(),
+                    collider.query_type.to_geometric_query_type(
+                        collider.margin,
+                        prediction,
+                        angular_prediction)
+                );
+
                 collider_object
                     .data_mut()
                     .set_material(collider.physics_material.clone());

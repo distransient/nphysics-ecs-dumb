@@ -7,7 +7,7 @@ use amethyst::ecs::{Entities, Entity, Join, ReadExpect, ReadStorage, System, Wri
 use amethyst::shrev::EventChannel;
 use nalgebra::Vector3;
 use ncollide3d::events::{ContactEvent, ProximityEvent};
-use nphysics3d::object::ColliderHandle;
+use nphysics3d::object::{ColliderHandle, Body, BodyPart};
 
 // Might want to replace by better types.
 pub type EntityContactEvent = (Entity, Entity, ContactEvent);
@@ -88,7 +88,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                         );
 
                     if let Some(ref mut local_transform) = local_transform {
-                        *local_transform.isometry_mut() = updated_body.position();
+                        *local_transform.isometry_mut() = *updated_body.position();
                     }
 
                     trace!(
@@ -120,7 +120,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
 
         trace!("Iterating collision events.");
 
-        let collision_world = physical_world.collision_world();
+        let collision_world = physical_world.collider_world();
 
         let contact_ev = collision_world.contact_events().iter().cloned().flat_map(|ev| {
                 trace!("Emitting contact event: {:?}", ev);
