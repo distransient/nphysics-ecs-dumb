@@ -8,7 +8,8 @@ use amethyst::ecs::{
     SystemData, Tracked, WriteExpect, WriteStorage,
 };
 use core::ops::Deref;
-use nphysics::object::BodyHandle;
+use nphysics::object::{BodyHandle, ColliderDesc, BodyPart};
+use nphysics::material::MaterialHandle;
 
 #[derive(Default, new)]
 pub struct SyncCollidersToPhysicsSystem {
@@ -61,7 +62,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 let parent = if let Some(rb) = rigid_bodies.get(entity) {
                     trace!("Attaching inserted collider to rigid body: {:?}", entity);
 
-                    rb.handle().expect(
+                    rb.handle.expect(
                         "You should normally have a body handle at this point. This is a bug.",
                     )
                 } else {
@@ -73,18 +74,18 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     collider.offset_from_parent
                 };
 
-                collider.handle = Some(physical_world.add_collider(
-                    collider.margin,
-                    collider.shape.clone(),
-                    parent,
-                    position,
-                    collider.physics_material.clone(),
-                ));
-
-                //trace!("Inserted collider to world with values: {:?}", collider);
+                 //trace!("Inserted collider to world with values: {:?}", collider);
 
                 let prediction = physical_world.prediction();
-                let angular_prediction = physical_world.angular_prediction();
+                let angular_prediction = 0.09;
+
+                let parent_part_handle = physical_world.rigid_body(parent).unwrap().part_handle();
+
+                collider.handle = Some(ColliderDesc::new(collider.shape.clone())
+                    .margin(collider.margin)
+                    .position(position)
+                    .material(MaterialHandle::new(collider.physics_material.clone()))
+                    .build_with_parent(parent_part_handle, &mut physical_world).unwrap().handle());
 
                 let collision_world = physical_world.collider_world_mut();
 
@@ -107,7 +108,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 trace!("Detected changed collider with id {:?}", id);
 
                 let prediction = physical_world.prediction();
-                let angular_prediction = physical_world.angular_prediction();
+                let angular_prediction = 0.09;
 
                 let collision_world = physical_world.collider_world_mut();
                 let collider_handle = collision_world
@@ -116,7 +117,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .handle();
 
                 collision_world.set_collision_groups(collider_handle, collider.collision_group);
-                collision_world.set_shape(collider_handle, collider.shape.clone());
+                collision_world.as_collider_world().set_shape(collider_handle, collider.shape.clone());
 
                 let collider_object = collision_world
                     .collider_mut(collider.handle.unwrap())
@@ -150,9 +151,10 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                         angular_prediction)
                 );
 
-                collider_object
-                    .data_mut()
-                    .set_material(collider.physics_material.clone());
+                // TODO: Material changes & more complex mats than BasicMaterial
+                /*collider_object
+                    .user_data_mut()
+                    .set_material(collider.physics_material.clone());*/
             }
         }
 
