@@ -8,7 +8,7 @@ use amethyst::ecs::{
     SystemData, Tracked, WriteExpect, WriteStorage,
 };
 use core::ops::Deref;
-use nphysics::object::{BodyHandle, ColliderDesc};
+use nphysics::object::{BodyHandle, ColliderDesc, BodyPartHandle};
 use nphysics::material::MaterialHandle;
 
 #[derive(Default, new)]
@@ -79,9 +79,10 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 let prediction = physical_world.prediction();
                 let angular_prediction = 0.09;
 
-                let parent_part_handle = physical_world.rigid_body(parent).unwrap().part_handle();
+                let parent_part_handle = physical_world.rigid_body(parent).map(|body| body.part_handle()).unwrap_or(BodyPartHandle::ground());
 
                 collider.handle = Some(ColliderDesc::new(collider.shape.clone())
+                    .user_data(entity)
                     .margin(collider.margin)
                     .position(position)
                     .material(MaterialHandle::new(collider.physics_material.clone()))

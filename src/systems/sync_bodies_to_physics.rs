@@ -97,7 +97,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
 
                 let iso: Isometry3<f32> = try_convert(transform.0).unwrap();
 
-                RigidBodyDesc::new()
+                body.handle = Some(RigidBodyDesc::new()
                     .position(iso)
                     //.gravity_enabled(false)
                     .status(body.body_status)
@@ -110,8 +110,8 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                     //.sleep_threshold(None)
                     //.kinematic_translations(Vector2::new(true, false))
                     //.kinematic_rotation(true)
-                    .user_data(Box::new(entity))
-                    .build(&mut physical_world);
+                    .user_data(entity)
+                    .build(&mut physical_world).handle());
 
                 trace!("Inserted rigid body to world with values: {:?}", body);
 

@@ -129,14 +129,15 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     ContactEvent::Started(h1, h2) => (h1, h2),
                     ContactEvent::Stopped(h1, h2) => (h1, h2),
                 };
-
-                let coll1 = physical_world.collider_body_handle(handle1);
-                let coll2 = physical_world.collider_body_handle(handle2);
+                let coll1 = physical_world.collider(handle1);
+                let coll2 = physical_world.collider(handle2);
                 if let (Some(c1), Some(c2)) = (coll1, coll2) {
-                    let e1 = physical_world.rigid_body(c1).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
-                    let e2 = physical_world.rigid_body(c2).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                    // TODO: Check if the data is in fact the one we want. There might be
+                    // user-inserted one.
+                    let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
+                    let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                     if let (Some(e1), Some(e2)) = (e1, e2) {
-                        Some((*e1.clone(), *e2.clone(), ev))
+                        Some((e1.clone(), e2.clone(), ev))
                     } else {
                         error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
                         None
@@ -155,13 +156,16 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 .cloned()
                 .flat_map(|ev| {
                     trace!("Emitting proximity event: {:?}", ev);
-                    let coll1 = physical_world.collider_body_handle(ev.collider1);
-                    let coll2 = physical_world.collider_body_handle(ev.collider2);
+                    println!("hello there");
+                    let coll1 = physical_world.collider(ev.collider1);
+                    let coll2 = physical_world.collider(ev.collider2);
                     if let (Some(c1), Some(c2)) = (coll1, coll2) {
-                        let e1 = physical_world.rigid_body(c1).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
-                        let e2 = physical_world.rigid_body(c2).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                        // TODO: Check if the data is in fact the one we want. There might be
+                        // user-inserted one.
+                        let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
+                        let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                         if let (Some(e1), Some(e2)) = (e1, e2) {
-                            Some((*e1.clone(), *e2.clone(), ev))
+                            Some((e1.clone(), e2.clone(), ev))
                         } else {
                             error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
                             None

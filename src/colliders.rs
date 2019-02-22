@@ -56,6 +56,8 @@ impl From<ShapeHandle<f32>> for ColliderBuilder {
             .shape(shape)
             .offset_from_parent(Isometry3::identity())
             .query_type(ColliderType::default())
+            .physics_material(BasicMaterial::default())
+            .collision_group(CollisionGroups::default())
     }
 }
 
