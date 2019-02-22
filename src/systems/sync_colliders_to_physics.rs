@@ -88,19 +88,19 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .build_with_parent(parent_part_handle, &mut physical_world).unwrap().handle());
 
                 let collision_world = physical_world.collider_world_mut();
-
-                let collider_object = collision_world
-                    .collider_mut(collider.handle.unwrap())
-                    .unwrap();
-
-                collision_world.as_collider_world().set_query_type(
+                
+                collision_world.as_collider_world_mut().set_query_type(
                     collider.handle.unwrap(),
                     collider.query_type.to_geometric_query_type(
                         collider.margin,
                         prediction,
                         angular_prediction)
                 );
-
+                
+                let collider_object = collision_world
+                    .collider_mut(collider.handle.unwrap())
+                    .unwrap();
+                
                 let collider_handle = collider_object.handle();
 
                 collision_world.set_collision_groups(collider_handle, collider.collision_group);
@@ -117,7 +117,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .handle();
 
                 collision_world.set_collision_groups(collider_handle, collider.collision_group);
-                collision_world.as_collider_world().set_shape(collider_handle, collider.shape.clone());
+                collision_world.as_collider_world_mut().set_shape(collider_handle, collider.shape.clone());
 
                 let collider_object = collision_world
                     .collider_mut(collider.handle.unwrap())
@@ -143,7 +143,7 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
 
                 collider_object.set_position(position);
                 
-                collision_world.as_collider_world().set_query_type(
+                collision_world.as_collider_world_mut().set_query_type(
                     collider.handle.unwrap(),
                     collider.query_type.to_geometric_query_type(
                         collider.margin,
