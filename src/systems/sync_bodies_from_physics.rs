@@ -36,14 +36,14 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
 
     fn run(&mut self, data: Self::SystemData) {
         let (
-            entities,
+            _entities,
             physical_world,
             mut contact_events,
             mut proximity_events,
             mut global_transforms,
             mut physics_bodies,
             mut local_transforms,
-            colliders,
+            _colliders,
         ) = data;
 
         trace!("Synchronizing bodies from physical world.");
@@ -130,12 +130,19 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     ContactEvent::Stopped(h1, h2) => (h1, h2),
                 };
 
-                let e1 = entity_from_handle(&entities, &colliders, handle1);
-                let e2 = entity_from_handle(&entities, &colliders, handle2);
-                if let (Some(e1), Some(e2)) = (e1, e2) {
-                    Some((e1, e2, ev))
+                let coll1 = physical_world.collider_body_handle(handle1);
+                let coll2 = physical_world.collider_body_handle(handle2);
+                if let (Some(c1), Some(c2)) = (coll1, coll2) {
+                    let e1 = physical_world.rigid_body(c1).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                    let e2 = physical_world.rigid_body(c2).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                    if let (Some(e1), Some(e2)) = (e1, e2) {
+                        Some((*e1.clone(), *e2.clone(), ev))
+                    } else {
+                        error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
+                        None
+                    }
                 } else {
-                    error!("Failed to find entity for collider during contact event iteration. Was the entity removed?");
+                    error!("Failed to fetch the rigid body from the physical world using the collider handle of the collision event. Was the entity removed?.");
                     None
                 }
             }).collect::<Vec<_>>();
@@ -148,13 +155,19 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 .cloned()
                 .flat_map(|ev| {
                     trace!("Emitting proximity event: {:?}", ev);
-
-                    let e1 = entity_from_handle(&entities, &colliders, ev.collider1);
-                    let e2 = entity_from_handle(&entities, &colliders, ev.collider2);
-                    if let (Some(e1), Some(e2)) = (e1, e2) {
-                        Some((e1, e2, ev))
+                    let coll1 = physical_world.collider_body_handle(ev.collider1);
+                    let coll2 = physical_world.collider_body_handle(ev.collider2);
+                    if let (Some(c1), Some(c2)) = (coll1, coll2) {
+                        let e1 = physical_world.rigid_body(c1).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                        let e2 = physical_world.rigid_body(c2).map(|body| body.user_data().unwrap().downcast_ref::<Box<Entity>>()).unwrap();
+                        if let (Some(e1), Some(e2)) = (e1, e2) {
+                            Some((*e1.clone(), *e2.clone(), ev))
+                        } else {
+                            error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
+                            None
+                        }
                     } else {
-                        error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
+                        error!("Failed to fetch the rigid body from the physical world using the collider handle of the collision event. Was the entity removed?.");
                         None
                     }
                 }).collect::<Vec<_>>();

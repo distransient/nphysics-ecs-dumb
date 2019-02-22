@@ -8,7 +8,7 @@ use amethyst::ecs::{
     SystemData, Tracked, WriteExpect, WriteStorage,
 };
 use core::ops::Deref;
-use nphysics::object::{BodyHandle, ColliderDesc, BodyPart};
+use nphysics::object::{BodyHandle, ColliderDesc};
 use nphysics::material::MaterialHandle;
 
 #[derive(Default, new)]

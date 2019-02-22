@@ -9,7 +9,7 @@ use amethyst::ecs::{
 use core::ops::Deref;
 use nalgebra::try_convert;
 use nalgebra::Isometry3;
-use nphysics3d::math::{Force, Inertia, Isometry};
+use nphysics3d::math::Isometry;
 
 use nphysics3d::object::{Body, RigidBodyDesc};
 
@@ -115,7 +115,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
 
                 trace!("Inserted rigid body to world with values: {:?}", body);
 
-                let physical_body = physical_world.rigid_body_mut(body.handle.unwrap()).unwrap();
+                //let physical_body = physical_world.rigid_body_mut(body.handle.unwrap()).unwrap();
 
                 //physical_body.set_velocity(body.velocity);
 
