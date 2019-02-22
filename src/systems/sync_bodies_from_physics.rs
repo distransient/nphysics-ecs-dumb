@@ -3,15 +3,9 @@ use crate::colliders::Collider;
 use crate::PhysicsWorld;
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::ecs::world::EntitiesRes;
-use amethyst::ecs::{Entities, Entity, Join, ReadExpect, ReadStorage, System, Write, WriteStorage};
-use amethyst::shrev::EventChannel;
+use amethyst::ecs::{Entities, Entity, Join, ReadExpect, ReadStorage, System, WriteStorage};
 use nalgebra::Vector3;
-use ncollide3d::events::{ContactEvent, ProximityEvent};
 use nphysics3d::object::{Body, BodyPart, ColliderHandle};
-
-// Might want to replace by better types.
-pub type EntityContactEvent = (Entity, Entity, ContactEvent);
-pub type EntityProximityEvent = (Entity, Entity, ProximityEvent);
 
 #[derive(Default)]
 pub struct SyncBodiesFromPhysicsSystem;
@@ -26,24 +20,18 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
     type SystemData = (
         Entities<'a>,
         ReadExpect<'a, PhysicsWorld>,
-        Write<'a, EventChannel<EntityContactEvent>>,
-        Write<'a, EventChannel<EntityProximityEvent>>,
         WriteStorage<'a, GlobalTransform>,
         WriteStorage<'a, DynamicBody>,
         WriteStorage<'a, Transform>,
-        ReadStorage<'a, Collider>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (
             _entities,
             physical_world,
-            mut contact_events,
-            mut proximity_events,
             mut global_transforms,
             mut physics_bodies,
             mut local_transforms,
-            _colliders,
         ) = data;
 
         trace!("Synchronizing bodies from physical world.");
@@ -117,69 +105,10 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                 error!("Found body without handle!");
             }
         }
-
-        trace!("Iterating collision events.");
-
-        let collision_world = physical_world.collider_world();
-
-        let contact_ev = collision_world.contact_events().iter().cloned().flat_map(|ev| {
-                trace!("Emitting contact event: {:?}", ev);
-
-                let (handle1, handle2) = match ev {
-                    ContactEvent::Started(h1, h2) => (h1, h2),
-                    ContactEvent::Stopped(h1, h2) => (h1, h2),
-                };
-                let coll1 = physical_world.collider(handle1);
-                let coll2 = physical_world.collider(handle2);
-                if let (Some(c1), Some(c2)) = (coll1, coll2) {
-                    // TODO: Check if the data is in fact the one we want. There might be
-                    // user-inserted one.
-                    let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
-                    let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
-                    if let (Some(e1), Some(e2)) = (e1, e2) {
-                        Some((*e1, *e2, ev))
-                    } else {
-                        error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
-                        None
-                    }
-                } else {
-                    error!("Failed to fetch the rigid body from the physical world using the collider handle of the collision event. Was the entity removed?.");
-                    None
-                }
-            }).collect::<Vec<_>>();
-
-        contact_events.iter_write(contact_ev.into_iter());
-
-        let proximity_ev = collision_world
-                .proximity_events()
-                .iter()
-                .cloned()
-                .flat_map(|ev| {
-                    trace!("Emitting proximity event: {:?}", ev);
-                    println!("hello there");
-                    let coll1 = physical_world.collider(ev.collider1);
-                    let coll2 = physical_world.collider(ev.collider2);
-                    if let (Some(c1), Some(c2)) = (coll1, coll2) {
-                        // TODO: Check if the data is in fact the one we want. There might be
-                        // user-inserted one.
-                        let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
-                        let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
-                        if let (Some(e1), Some(e2)) = (e1, e2) {
-                            Some((*e1, *e2, ev))
-                        } else {
-                            error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
-                            None
-                        }
-                    } else {
-                        error!("Failed to fetch the rigid body from the physical world using the collider handle of the collision event. Was the entity removed?.");
-                        None
-                    }
-                }).collect::<Vec<_>>();
-
-        proximity_events.iter_write(proximity_ev.into_iter());
     }
 }
 
+// TODO: why is this here
 pub fn entity_from_handle(
     entities: &EntitiesRes,
     colliders: &ReadStorage<Collider>,
