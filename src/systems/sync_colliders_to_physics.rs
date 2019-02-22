@@ -82,14 +82,14 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 let parent_part_handle = physical_world
                     .rigid_body(parent)
                     .map(|body| body.part_handle())
-                    .unwrap_or(BodyPartHandle::ground());
+                    .unwrap_or_else(BodyPartHandle::ground);
 
                 collider.handle = Some(
                     ColliderDesc::new(collider.shape.clone())
                         .user_data(entity)
                         .margin(collider.margin)
                         .position(position)
-                        .material(MaterialHandle::new(collider.physics_material.clone()))
+                        .material(MaterialHandle::new(collider.physics_material))
                         .build_with_parent(parent_part_handle, &mut physical_world)
                         .unwrap()
                         .handle(),

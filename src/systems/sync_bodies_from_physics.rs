@@ -137,7 +137,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                     let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                     let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                     if let (Some(e1), Some(e2)) = (e1, e2) {
-                        Some((e1.clone(), e2.clone(), ev))
+                        Some((*e1, *e2, ev))
                     } else {
                         error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
                         None
@@ -165,7 +165,7 @@ impl<'a> System<'a> for SyncBodiesFromPhysicsSystem {
                         let e1 = c1.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                         let e2 = c2.user_data().map(|data| data.downcast_ref::<Entity>().unwrap());
                         if let (Some(e1), Some(e2)) = (e1, e2) {
-                            Some((e1.clone(), e2.clone(), ev))
+                            Some((*e1, *e2, ev))
                         } else {
                             error!("Failed to find entity for collider during proximity event iteration. Was the entity removed?");
                             None
