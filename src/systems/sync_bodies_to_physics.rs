@@ -97,21 +97,24 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
 
                 let iso: Isometry3<f32> = try_convert(transform.0).unwrap();
 
-                body.handle = Some(RigidBodyDesc::new()
-                    .position(iso)
-                    //.gravity_enabled(false)
-                    .status(body.body_status)
-                    //.name("my rigid body".to_owned())
-                    .velocity(body.velocity)
-                    //.angular_inertia(3.0)
-                    .mass(1.2)
-                    //.local_inertia(Inertia::new(1.0, 3.0))
-                    .local_center_of_mass(body.center_of_mass)
-                    //.sleep_threshold(None)
-                    //.kinematic_translations(Vector2::new(true, false))
-                    //.kinematic_rotation(true)
-                    .user_data(entity)
-                    .build(&mut physical_world).handle());
+                body.handle = Some(
+                    RigidBodyDesc::new()
+                        .position(iso)
+                        //.gravity_enabled(false)
+                        .status(body.body_status)
+                        //.name("my rigid body".to_owned())
+                        .velocity(body.velocity)
+                        //.angular_inertia(3.0)
+                        .mass(1.2)
+                        //.local_inertia(Inertia::new(1.0, 3.0))
+                        .local_center_of_mass(body.center_of_mass)
+                        //.sleep_threshold(None)
+                        //.kinematic_translations(Vector2::new(true, false))
+                        //.kinematic_rotation(true)
+                        .user_data(entity)
+                        .build(&mut physical_world)
+                        .handle(),
+                );
 
                 trace!("Inserted rigid body to world with values: {:?}", body);
 
@@ -142,7 +145,7 @@ impl<'a> System<'a> for SyncBodiesToPhysicsSystem {
                             // TODO
                             //physical_body.apply_force(&body.external_forces);
                             //body.external_forces = Force::<f32>::zero();
-                            
+
                             physical_body.set_status(body.body_status);
                         }
                         None => error!(

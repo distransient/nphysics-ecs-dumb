@@ -1,9 +1,9 @@
-use ncollide3d::world::CollisionGroups;
 use amethyst::ecs::{Component, DenseVecStorage, FlaggedStorage};
 use nalgebra::Isometry3;
 use ncollide::{shape::ShapeHandle, world::GeometricQueryType};
-use nphysics::object::ColliderHandle;
+use ncollide3d::world::CollisionGroups;
 use nphysics::material::BasicMaterial;
+use nphysics::object::ColliderHandle;
 
 #[derive(Clone, Serialize, Deserialize, Debug, new)]
 pub enum ColliderType {

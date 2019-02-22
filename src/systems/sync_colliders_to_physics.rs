@@ -8,8 +8,8 @@ use amethyst::ecs::{
     SystemData, Tracked, WriteExpect, WriteStorage,
 };
 use core::ops::Deref;
-use nphysics::object::{BodyHandle, ColliderDesc, BodyPartHandle};
 use nphysics::material::MaterialHandle;
+use nphysics::object::{BodyHandle, BodyPartHandle, ColliderDesc};
 
 #[derive(Default, new)]
 pub struct SyncCollidersToPhysicsSystem {
@@ -74,34 +74,42 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     collider.offset_from_parent
                 };
 
-                 //trace!("Inserted collider to world with values: {:?}", collider);
+                //trace!("Inserted collider to world with values: {:?}", collider);
 
                 let prediction = physical_world.prediction();
                 let angular_prediction = 0.09;
 
-                let parent_part_handle = physical_world.rigid_body(parent).map(|body| body.part_handle()).unwrap_or(BodyPartHandle::ground());
+                let parent_part_handle = physical_world
+                    .rigid_body(parent)
+                    .map(|body| body.part_handle())
+                    .unwrap_or(BodyPartHandle::ground());
 
-                collider.handle = Some(ColliderDesc::new(collider.shape.clone())
-                    .user_data(entity)
-                    .margin(collider.margin)
-                    .position(position)
-                    .material(MaterialHandle::new(collider.physics_material.clone()))
-                    .build_with_parent(parent_part_handle, &mut physical_world).unwrap().handle());
+                collider.handle = Some(
+                    ColliderDesc::new(collider.shape.clone())
+                        .user_data(entity)
+                        .margin(collider.margin)
+                        .position(position)
+                        .material(MaterialHandle::new(collider.physics_material.clone()))
+                        .build_with_parent(parent_part_handle, &mut physical_world)
+                        .unwrap()
+                        .handle(),
+                );
 
                 let collision_world = physical_world.collider_world_mut();
-                
+
                 collision_world.as_collider_world_mut().set_query_type(
                     collider.handle.unwrap(),
                     collider.query_type.to_geometric_query_type(
                         collider.margin,
                         prediction,
-                        angular_prediction)
+                        angular_prediction,
+                    ),
                 );
-                
+
                 let collider_object = collision_world
                     .collider_mut(collider.handle.unwrap())
                     .unwrap();
-                
+
                 let collider_handle = collider_object.handle();
 
                 collision_world.set_collision_groups(collider_handle, collider.collision_group);
@@ -118,7 +126,9 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                     .handle();
 
                 collision_world.set_collision_groups(collider_handle, collider.collision_group);
-                collision_world.as_collider_world_mut().set_shape(collider_handle, collider.shape.clone());
+                collision_world
+                    .as_collider_world_mut()
+                    .set_shape(collider_handle, collider.shape.clone());
 
                 let collider_object = collision_world
                     .collider_mut(collider.handle.unwrap())
@@ -143,19 +153,20 @@ impl<'a> System<'a> for SyncCollidersToPhysicsSystem {
                 };
 
                 collider_object.set_position(position);
-                
+
                 collision_world.as_collider_world_mut().set_query_type(
                     collider.handle.unwrap(),
                     collider.query_type.to_geometric_query_type(
                         collider.margin,
                         prediction,
-                        angular_prediction)
+                        angular_prediction,
+                    ),
                 );
 
                 // TODO: Material changes & more complex mats than BasicMaterial
                 /*collider_object
-                    .user_data_mut()
-                    .set_material(collider.physics_material.clone());*/
+                .user_data_mut()
+                .set_material(collider.physics_material.clone());*/
             }
         }
 

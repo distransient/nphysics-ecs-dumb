@@ -1,26 +1,28 @@
 use amethyst::assets::{Handle, Loader};
 use amethyst::core::nalgebra::{Matrix3, Vector3};
+use amethyst::core::shrev::{EventChannel, ReaderId};
 use amethyst::core::specs::world::Builder;
 use amethyst::core::specs::Join;
 use amethyst::core::{GlobalTransform, Transform, TransformBundle};
+use amethyst::input::{is_close_requested, is_key_down};
 use amethyst::renderer::{
     AmbientColor, Camera, DisplayConfig, DrawShaded, Light, Material, MaterialDefaults, MeshData,
     MeshHandle, Pipeline, PointLight, PosNormTex, RenderBundle, Rgba, ScreenDimensions, Shape,
     Stage, Texture, VirtualKeyCode,
 };
-use amethyst::input::{is_close_requested, is_key_down};
-use amethyst::{Application, GameData, GameDataBuilder, SimpleState, StateData, StateEvent, SimpleTrans, Trans};
-use amethyst::core::shrev::{ReaderId, EventChannel};
+use amethyst::{
+    Application, GameData, GameDataBuilder, SimpleState, SimpleTrans, StateData, StateEvent, Trans,
+};
 use nphysics_ecs_dumb::ncollide::shape::{Ball, ShapeHandle};
-use nphysics_ecs_dumb::nphysics::math::Velocity;
 use nphysics_ecs_dumb::nphysics::material::BasicMaterial as PhysicsMaterial;
+use nphysics_ecs_dumb::nphysics::math::Velocity;
 use nphysics_ecs_dumb::nphysics::volumetric::Volumetric;
 use nphysics_ecs_dumb::*;
 use num_traits::identities::One;
 use std::time::Duration;
 
 #[derive(Default)]
-struct GameState{
+struct GameState {
     pub collision_reader: Option<ReaderId<EntityContactEvent>>,
 }
 
@@ -53,7 +55,11 @@ impl SimpleState for GameState {
 
         let camera_transform = Transform::from(Vector3::new(0.0, 5.0, 5.0));
 
-        self.collision_reader = Some(data.world.write_resource::<EventChannel<EntityContactEvent>>().register_reader());
+        self.collision_reader = Some(
+            data.world
+                .write_resource::<EventChannel<EntityContactEvent>>()
+                .register_reader(),
+        );
 
         // Add Camera
         data.world
@@ -161,8 +167,11 @@ impl SimpleState for GameState {
         event: StateEvent,
     ) -> SimpleTrans {
         if let StateEvent::Window(event) = &event {
-
-            for _ in data.world.read_resource::<EventChannel<EntityContactEvent>>().read(self.collision_reader.as_mut().unwrap()) {
+            for _ in data
+                .world
+                .read_resource::<EventChannel<EntityContactEvent>>()
+                .read(self.collision_reader.as_mut().unwrap())
+            {
                 println!("Collision Event Detected.");
             }
 
@@ -171,29 +180,38 @@ impl SimpleState for GameState {
                 return Trans::Quit;
             }
 
-            // 
+            //
             if is_key_down(&event, VirtualKeyCode::T) {
-                *data.world.write_resource::<TimeStep>() = TimeStep::Fixed(1./120.);
+                *data.world.write_resource::<TimeStep>() = TimeStep::Fixed(1. / 120.);
                 println!("Setting timestep to 1./120.");
             }
 
             if is_key_down(&event, VirtualKeyCode::Y) {
-                *data.world.write_resource::<TimeStep>() = TimeStep::Fixed(1./60.);
+                *data.world.write_resource::<TimeStep>() = TimeStep::Fixed(1. / 60.);
                 println!("Setting timestep to 1./60.");
             }
 
             if is_key_down(&event, VirtualKeyCode::S) {
-                *data.world.write_resource::<TimeStep>() = TimeStep::SemiFixed(TimeStepConstraint::new(
-                    vec![1. / 240., 1. / 120., 1. / 60.],
-                    0.4,
-                    Duration::from_millis(50),
-                    Duration::from_millis(500),
-                ))
+                *data.world.write_resource::<TimeStep>() =
+                    TimeStep::SemiFixed(TimeStepConstraint::new(
+                        vec![1. / 240., 1. / 120., 1. / 60.],
+                        0.4,
+                        Duration::from_millis(50),
+                        Duration::from_millis(500),
+                    ))
             }
 
             // Reset the example
             if is_key_down(&event, VirtualKeyCode::Space) {
-                *(&mut data.world.write_storage::<Transform>(), &data.world.read_storage::<DynamicBody>()).join().next().unwrap().0.translation_mut() = Vector3::new(0.0, 15.0, -10.0);
+                *(
+                    &mut data.world.write_storage::<Transform>(),
+                    &data.world.read_storage::<DynamicBody>(),
+                )
+                    .join()
+                    .next()
+                    .unwrap()
+                    .0
+                    .translation_mut() = Vector3::new(0.0, 15.0, -10.0);
             }
         }
         Trans::None

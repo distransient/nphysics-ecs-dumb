@@ -1,7 +1,7 @@
 use crate::time_step::TimeStep;
 use crate::PhysicsWorld;
 use amethyst::core::Time;
-use amethyst::ecs::{Read, System, WriteExpect, Write};
+use amethyst::ecs::{Read, System, Write, WriteExpect};
 use std::f32::EPSILON;
 use std::time::Instant;
 
@@ -39,7 +39,11 @@ impl PhysicsStepperSystem {
 }
 
 impl<'a> System<'a> for PhysicsStepperSystem {
-    type SystemData = (WriteExpect<'a, PhysicsWorld>, Read<'a, Time>, Write<'a, TimeStep>);
+    type SystemData = (
+        WriteExpect<'a, PhysicsWorld>,
+        Read<'a, Time>,
+        Write<'a, TimeStep>,
+    );
 
     // Simulate world using the current time frame
     fn run(&mut self, (mut physical_world, time, mut intended_timestep): Self::SystemData) {
@@ -108,7 +112,12 @@ impl<'a> System<'a> for PhysicsStepperSystem {
         while steps <= self.timestep_iter_limit && self.time_accumulator >= timestep {
             let physics_time = Instant::now();
 
-            trace!("Stepping physics system. Step: {}, Timestep: {}, Time accumulator: {}", steps, timestep, self.time_accumulator);
+            trace!(
+                "Stepping physics system. Step: {}, Timestep: {}, Time accumulator: {}",
+                steps,
+                timestep,
+                self.time_accumulator
+            );
             physical_world.step();
 
             let physics_time = physics_time.elapsed();
