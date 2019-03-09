@@ -1,23 +1,26 @@
-use amethyst::assets::{Handle, Loader};
-use amethyst::core::nalgebra::{Matrix3, Vector3};
-use amethyst::core::shrev::{EventChannel, ReaderId};
-use amethyst::core::specs::world::Builder;
-use amethyst::core::specs::Join;
-use amethyst::core::{GlobalTransform, Transform, TransformBundle};
-use amethyst::input::{is_close_requested, is_key_down};
-use amethyst::renderer::{
-    AmbientColor, Camera, DisplayConfig, DrawShaded, Light, Material, MaterialDefaults, MeshData,
-    MeshHandle, Pipeline, PointLight, PosNormTex, RenderBundle, Rgba, ScreenDimensions, Shape,
-    Stage, Texture, VirtualKeyCode,
-};
 use amethyst::{
+    assets::{Handle, Loader},
+    core::{
+        math::{Matrix3, Vector3},
+        shrev::{EventChannel, ReaderId},
+        ecs::{world::Builder, Join},
+        GlobalTransform, Transform, TransformBundle,
+    },
+    input::{is_close_requested, is_key_down},
+    renderer::{
+        AmbientColor, Camera, DisplayConfig, DrawShaded, Light, Material, MaterialDefaults,
+        MeshData, MeshHandle, Pipeline, PointLight, PosNormTex, RenderBundle, Rgba,
+        ScreenDimensions, Shape, Stage, Texture, VirtualKeyCode,
+    },
     Application, GameData, GameDataBuilder, SimpleState, SimpleTrans, StateData, StateEvent, Trans,
 };
-use nphysics_ecs_dumb::ncollide::shape::{Ball, ShapeHandle};
-use nphysics_ecs_dumb::nphysics::material::BasicMaterial as PhysicsMaterial;
-use nphysics_ecs_dumb::nphysics::math::Velocity;
-use nphysics_ecs_dumb::nphysics::volumetric::Volumetric;
-use nphysics_ecs_dumb::*;
+use nphysics_ecs_dumb::{
+    ncollide::shape::{Ball, ShapeHandle},
+    nphysics::{
+        material::BasicMaterial as PhysicsMaterial, math::Velocity, volumetric::Volumetric,
+    },
+    *,
+};
 use num_traits::identities::One;
 use std::time::Duration;
 
@@ -119,7 +122,8 @@ impl SimpleState for GameState {
             .with(Transform::from(Vector3::new(0.0, 0.0, -10.0)))
             .with(GlobalTransform::default())
             .with(
-                //ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0, 5.0))))
+                //ColliderBuilder::from(ShapeHandle::new(Cuboid::new(Vector3::new(5.0, 1.0,
+                // 5.0))))
                 ColliderBuilder::from(ball)
                     .physics_material(PhysicsMaterial::default())
                     .build()
@@ -127,7 +131,8 @@ impl SimpleState for GameState {
             )
             .build();
 
-        //---------------------------------------------------- nphysics's ball3.rs adapted
+        //---------------------------------------------------- nphysics's ball3.rs
+        //---------------------------------------------------- adapted
 
         /*let mut physics_world = data.world.write_resource::<PhysicsWorld>();
         physics_world.set_gravity(Vector3::new(0.0, -9.81, 0.0));
